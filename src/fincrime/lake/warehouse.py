@@ -68,6 +68,18 @@ def has_lake(con: duckdb.DuckDBPyConnection, kind: str) -> bool:
     )
 
 
+def orphan_reports(con: duckdb.DuckDBPyConnection) -> int:
+    """Fraud reports whose event has still not reached the lake (they resolve as it arrives)."""
+    if not has_lake(con, "reports"):
+        return 0
+    return int(
+        con.execute(
+            "select count(*) from lake.reports r left join ops.event_registry g on g.event_id = r.event_id "
+            "where g.event_id is null"
+        ).fetchall()[0][0]
+    )
+
+
 def refresh_dims(con: duckdb.DuckDBPyConnection, landing: Path) -> int:
     """Full refresh of the small dimension tables from the landing zone."""
     dim = landing / "dim"

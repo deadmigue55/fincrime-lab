@@ -31,6 +31,7 @@ class Contract:
     sql: str
     description: str
     needs: tuple[str, ...] = ()  # lake views that must exist, or the check is skipped
+    kind: str = "attempts"  # which part of the drop it guards: "attempts" or "reports"
 
 
 ATTEMPT_CONTRACTS: tuple[Contract, ...] = (
@@ -50,11 +51,9 @@ ATTEMPT_CONTRACTS: tuple[Contract, ...] = (
     Contract(
         "event_id_unique_in_lake",
         "error",
-        "select count(*) from stg_attempts s join lake.attempts l on l.event_id = s.event_id "
-        "and l.event_day between (select min(ts)::date from stg_attempts) and (select max(ts)::date from stg_attempts) "
-        "where l.filename not like '%drop-{drop}-%'",
+        "select count(*) from stg_attempts s join ops.event_registry r on r.event_id = s.event_id "
+        "where r.drop_id <> '{drop}'",
         "an event already loaded by another drop is not loaded again",
-        needs=("attempts",),
     ),
     Contract(
         "amount_positive",
@@ -113,12 +112,23 @@ ATTEMPT_CONTRACTS: tuple[Contract, ...] = (
 
 REPORT_CONTRACTS: tuple[Contract, ...] = (
     Contract(
-        "report_references_known_event",
+        "report_keys_not_null",
         "error",
-        "select count(*) from stg_reports r where r.event_id not in "
-        "(select event_id from stg_attempts union all select event_id from lake.attempts)",
-        "a fraud report refers to an event the platform has",
-        needs=("attempts",),
+        "select count(*) from stg_reports where event_id is null or reported_ts is null",
+        "a fraud report has an event and a report time",
+        kind="reports",
+    ),
+    # A report is a fact about the world and can reach the platform BEFORE the event it is
+    # about (events can be delivered 1 to 3 days late; victims report within days). So an
+    # unknown event is a warning plus a monitored orphan count, not a reason to reject the
+    # drop. `fincrime lake status` shows reports still unresolved.
+    Contract(
+        "report_references_known_event",
+        "warn",
+        "select count(*) from stg_reports r left join ops.event_registry g on g.event_id = r.event_id "
+        "where g.event_id is null and r.event_id not in (select event_id from stg_attempts)",
+        "a fraud report refers to an event not delivered yet (out-of-order delivery)",
+        kind="reports",
     ),
 )
 
@@ -131,10 +141,16 @@ class Result:
     severity: str
     violations: int
     passed: bool
+    kind: str = "attempts"
 
 
 def volume_check(con: duckdb.DuckDBPyConnection, drop_id: str, rows: int) -> Result | None:
-    """Warn when a drop is less than half or more than double the median of the last 7 loads."""
+    """Warn when a drop is under 40% or over 300% of the median of the last 7 loads.
+
+    The first version used 50% to 200% and raised 32 false alarms on a full run, all of them
+    month-end and mid-month pay days (volume +40% on those days) and the launch month, when
+    volume doubles in weeks. A genuine feed failure (a missing source, a doubled file) is a
+    far bigger swing than these, so the band was widened rather than the alert dropped."""
     past = [
         r[0]
         for r in con.execute(
@@ -143,10 +159,10 @@ def volume_check(con: duckdb.DuckDBPyConnection, drop_id: str, rows: int) -> Res
             [drop_id],
         ).fetchall()
     ]
-    if len(past) < 3:
+    if len(past) < 7:
         return None
     ratio = rows / max(median(past), 1)
-    bad = not 0.5 <= ratio <= 2.0
+    bad = not 0.4 <= ratio <= 3.0
     return Result("volume_vs_recent_median", "warn", 1 if bad else 0, not bad)
 
 
@@ -160,15 +176,9 @@ def run(
     results: list[Result] = []
     for c in contracts:
         if any(not warehouse.has_lake(con, kind) for kind in c.needs):
-            if c.name == "report_references_known_event":
-                # first drop: the only events a report can point at are in this very drop
-                sql = "select count(*) from stg_reports r where r.event_id not in (select event_id from stg_attempts)"
-            else:
-                continue
-        else:
-            sql = c.sql
-        n = int(con.execute(sql.replace("{drop}", drop_id)).fetchall()[0][0])
-        results.append(Result(c.name, c.severity, n, n == 0))
+            continue
+        n = int(con.execute(c.sql.replace("{drop}", drop_id)).fetchall()[0][0])
+        results.append(Result(c.name, c.severity, n, n == 0, c.kind))
     if has_attempts and (vol := volume_check(con, drop_id, rows)) is not None:
         results.append(vol)
     now = datetime.now(UTC).replace(tzinfo=None)

@@ -36,6 +36,7 @@ class DropResult:
     event_days: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    held_back: list[str] = field(default_factory=list)  # reports not loaded because they failed
 
 
 def _q(path: Path) -> str:
@@ -187,12 +188,23 @@ class Lake:
         )
         bad = contracts.blocking(results)
         warnings = [r.contract for r in results if r.severity == "warn" and not r.passed]
-        if bad:
-            names = [f"{r.contract} ({r.violations})" for r in bad]
+        bad_attempts = [r for r in bad if r.kind == "attempts"]
+        if bad_attempts:
+            names = [f"{r.contract} ({r.violations})" for r in bad_attempts]
             self._set_ledger(drop_id, "quarantined", rows=n_rows, sha=sha, message="; ".join(names))
             return DropResult(drop_id, "quarantined", n_rows, failed=names, warnings=warnings)
+        # A bad reports file holds back only the reports: the transactions are not punished for it.
+        held_back = [f"{r.contract} ({r.violations})" for r in bad if r.kind == "reports"]
+        if held_back:
+            files = {**files, "reports": []}
 
         self._publish(drop_id, files)
+        self.con.execute("delete from ops.event_registry where drop_id = ?", [drop_id])
+        if files["attempts"]:
+            self.con.execute(
+                "insert into ops.event_registry select event_id, ts::date, ? from stg_attempts",
+                [drop_id],
+            )
         warehouse.refresh_views(self.con, self.lake)
         days: set[str] = set(before[2].split(",")) if before and before[2] else set()
         if files["attempts"]:
@@ -202,8 +214,13 @@ class Lake:
             }
         day_list = sorted(d for d in days if d)
         warehouse.rebuild_marts(self.con, [date.fromisoformat(d) for d in day_list])
-        self._set_ledger(drop_id, "loaded", rows=n_rows, sha=sha, event_days=",".join(day_list))
-        return DropResult(drop_id, "loaded", n_rows, event_days=day_list, warnings=warnings)
+        note = ("reports held back: " + "; ".join(held_back)) if held_back else None
+        self._set_ledger(
+            drop_id, "loaded", rows=n_rows, sha=sha, event_days=",".join(day_list), message=note
+        )
+        return DropResult(
+            drop_id, "loaded", n_rows, event_days=day_list, warnings=warnings, held_back=held_back
+        )
 
     def load_pending(self, limit: int | None = None, refresh_dims: bool = True) -> list[DropResult]:
         """Load every pending drop in arrival order (optionally only the first ``limit``)."""

@@ -144,6 +144,67 @@ def cmd_lake_load(args: argparse.Namespace) -> int:
         lake.close()
 
 
+def cmd_lake_benchmark(args: argparse.Namespace) -> int:
+    """Time canonical queries from 1M to 180M rows and write the results."""
+    from pathlib import Path
+
+    from fincrime.lake import benchmark
+
+    paths = get_paths()
+    base = paths.processed / "amlworld"
+    trans, accts = base / f"{args.dataset}_Trans.parquet", base / f"{args.dataset}_accounts.parquet"
+    for f in (trans, accts):
+        if not f.exists():
+            print(f"missing {f}: run `fincrime ingest convert amlworld --sizes large --kinds HI`")
+            return 2
+    sizes = tuple(args.sizes) if args.sizes else benchmark.SIZES
+    queries = {k: v for k, v in benchmark.QUERIES.items() if not args.queries or k in args.queries}
+    info = benchmark.machine()
+    print("machine:", info)
+    out = Path(args.out)
+    if out.exists() and not args.resume:
+        out.unlink()  # a fresh run starts a fresh file; use --resume to continue one
+    benchmark.benchmark(
+        trans,
+        accts,
+        sizes,
+        queries,
+        repeats=args.repeats,
+        timeout=args.timeout,
+        csv_path=out,
+        resume=args.resume,
+        memory_limit_gb=args.memory_limit_gb,
+        temp_dir=paths.processed / "duckdb_tmp",
+    )
+    import json
+
+    out.with_suffix(".machine.json").write_text(json.dumps(info, indent=2), encoding="utf-8")
+    print(f"wrote {out}")
+    if args.layouts:
+        rows = benchmark.layout_comparison(
+            trans, paths.processed / "layout_test", n=args.layout_rows
+        )
+        for r in rows:
+            print(f"layout {r['layout']:<16} {r['median_s']:.3f}s  {r['size_mb']:.0f} MB")
+        import json
+
+        Path(args.out).with_suffix(".layouts.json").write_text(
+            json.dumps({"machine": info, "layouts": rows}, indent=2)
+        )
+    return 0
+
+
+def cmd_lake_benchmark_report(args: argparse.Namespace) -> int:
+    """Draw the benchmark figures and write the report."""
+    from pathlib import Path
+
+    from fincrime.lake import bench_report
+
+    for path in bench_report.build(Path(args.csv), Path(args.out), Path(args.img)):
+        print(f"wrote {path}")
+    return 0
+
+
 def cmd_lake_status(_: argparse.Namespace) -> int:
     """Summarise the load ledger and the data-quality results."""
     from fincrime.lake import warehouse
@@ -165,6 +226,7 @@ def cmd_lake_status(_: argparse.Namespace) -> int:
     print(
         "marts:", con.execute("select count(*), min(day), max(day) from mart.daily_kpis").fetchall()
     )
+    print("reports still waiting for their event:", warehouse.orphan_reports(con))
     return 0
 
 
@@ -288,6 +350,25 @@ def build_parser() -> argparse.ArgumentParser:
     lake_sub.add_parser("status", help="ledger and contract summary").set_defaults(
         func=cmd_lake_status
     )
+    bench = lake_sub.add_parser("benchmark", help="scaling benchmark on AMLworld")
+    bench.add_argument("--dataset", default="HI-Large")
+    bench.add_argument("--sizes", type=int, nargs="*", help="row counts (default 1M to full file)")
+    bench.add_argument("--queries", nargs="*", help="only these queries")
+    bench.add_argument("--repeats", type=int, default=3)
+    bench.add_argument("--timeout", type=float, default=900)
+    bench.add_argument("--out", default="docs/benchmark-results.csv")
+    bench.add_argument("--resume", action="store_true", help="skip pairs already in the CSV")
+    bench.add_argument(
+        "--memory-limit-gb", type=int, default=None, help="DuckDB cap (default: half of RAM)"
+    )
+    bench.add_argument("--layouts", action="store_true", help="also compare file layouts")
+    bench.add_argument("--layout-rows", type=int, default=50_000_000)
+    bench.set_defaults(func=cmd_lake_benchmark)
+    brep = lake_sub.add_parser("benchmark-report", help="figures and report from the benchmark CSV")
+    brep.add_argument("--csv", default="docs/benchmark-results.csv")
+    brep.add_argument("--out", default="docs/benchmark-scaling.md")
+    brep.add_argument("--img", default="docs/img")
+    brep.set_defaults(func=cmd_lake_benchmark_report)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)

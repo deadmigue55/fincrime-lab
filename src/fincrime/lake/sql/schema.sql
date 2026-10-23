@@ -16,6 +16,14 @@ create table if not exists ops.load_ledger (
     finished_at    timestamp
 );
 
+-- Every event id the lake holds, keyed. Contracts look ids up here instead of scanning the lake,
+-- so the cost of a drop stays flat as the lake grows.
+create table if not exists ops.event_registry (
+    event_id   bigint primary key,
+    event_day  date,
+    drop_id    varchar
+);
+
 create table if not exists ops.dq_results (
     drop_id     varchar,
     contract    varchar,

@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 3 of 11 in progress**: the synthetic bank is done; four public benchmark datasets
-> are being ingested (three loaded, IEEE-CIS waiting on a Kaggle rules click). Next: the data
-> platform (step 4).
+> Status: **step 4 of 11 nearly done**: the synthetic bank, four public benchmarks and the
+> data platform are built and tested; the final 180-million-row benchmark run is pending.
+> Next: fraud features and models (steps 5 and 6).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -19,7 +19,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 | Module | What it shows | Status |
 |---|---|---|
 | `bank` | A simulated Mexican neobank with planted fraud and laundering, calibrated to public data | done |
-| `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | next |
+| `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | built, final benchmark pending |
 | `fraud` | Time-based validation, delayed labels, fixed false-positive budgets, cost-optimal thresholds, fairness, drift | planned |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | planned |
 | `aml` | Rules vs graph analytics, typology coverage, alert workload | planned |
@@ -113,6 +113,32 @@ high-illicit-ratio sets and 24% to 29% in the low-illicit-ratio sets; and in AML
 format ACH carries a 0.75% laundering rate against about 0.02% for every other format, a simulator
 artefact a real bank would not have. Raw files are never committed, and because of the licences
 only aggregate results are published. The full fact sheet is [docs/benchmarks.md](docs/benchmarks.md).
+
+## Data platform (step 4)
+
+The bank's data reaches analysts through a small but real platform, described in
+[docs/platform.md](docs/platform.md): daily drops land by arrival date (3% of events arrive 1 to 3
+days late), pass SQL data contracts, and are published to a Parquet lake partitioned by event day;
+DuckDB marts are rebuilt only for the days a drop touches, and ground truth lives in a separate
+`eval` schema that models never read.
+
+It is idempotent, correctable, recoverable after a crash and able to quarantine a bad drop, and each
+of those properties has a test (16 tests). Running it at full scale, 34.7 million events in 597
+drops, found two flaws the small tests could not: a quadratic slowdown (fixed with an event
+registry) and a cascade in which a few fraud reports that arrived before their transaction caused
+185 drops to be rejected (fixed by treating out-of-order reports as a monitored warning). After
+the fixes every drop loads and every report finds its event. The write-up keeps the bad run in it
+on purpose.
+
+```mermaid
+flowchart LR
+    S[Daily drops] --> L[Landing]
+    L --> C{Contracts}
+    C -- error --> Q[Quarantine]
+    C -- pass --> P[Parquet lake by event day]
+    P --> M[DuckDB marts]
+    P --> E[eval: ground truth]
+```
 
 ## Data
 

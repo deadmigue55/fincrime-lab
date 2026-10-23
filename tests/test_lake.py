@@ -9,7 +9,7 @@ import pytest
 from fincrime.bank.assumptions import Assumptions
 from fincrime.bank.policy import RulePolicy
 from fincrime.bank.simulate import build_bank
-from fincrime.lake import landing, warehouse
+from fincrime.lake import contracts, landing, warehouse
 from fincrime.lake.loader import Lake
 
 A = Assumptions(
@@ -269,3 +269,89 @@ def test_sql_statement_splitter_and_lake_views():
     assert warehouse.statements(sql) == ["create table t(x int)", "insert into t values (1)"]
     con = warehouse.connect(None, Path("does-not-exist"))
     assert not warehouse.has_lake(con, "attempts")
+
+
+def staged(rows: str, registry: list[int] | None = None):
+    """An in-memory warehouse with a one-row report drop staged and an optional event registry."""
+    con = warehouse.connect(None, Path("does-not-exist"))
+    con.execute("create temp view stg_attempts as select 0::bigint as event_id where false")
+    con.execute(
+        f"create temp view stg_reports as select * from (values {rows}) t(event_id, reported_ts)"
+    )
+    for event_id in registry or []:
+        con.execute(
+            "insert into ops.event_registry values (?, date '2024-01-01', 'earlier')", [event_id]
+        )
+    return con
+
+
+def test_report_before_its_event_is_a_warning_not_a_rejection():
+    con = staged("(42, timestamp '2024-01-03 10:00:00')")
+    results = contracts.run(con, "2024-01-03", rows=1, has_attempts=False, has_reports=True)
+    orphan = next(r for r in results if r.contract == "report_references_known_event")
+    assert (orphan.severity, orphan.passed, orphan.violations) == ("warn", False, 1)
+    assert contracts.blocking(results) == []  # out-of-order delivery must not reject anything
+    assert warehouse.orphan_reports(con) == 0  # nothing in the lake yet, so nothing to count
+    # once the event is known, the same report is fine
+    con = staged("(42, timestamp '2024-01-03 10:00:00')", registry=[42])
+    results = contracts.run(con, "2024-01-03", rows=1, has_attempts=False, has_reports=True)
+    assert all(r.passed for r in results)
+
+
+def test_malformed_report_is_an_error_that_belongs_to_reports_only():
+    con = staged("(42, null)", registry=[42])
+    results = contracts.run(con, "2024-01-03", rows=1, has_attempts=False, has_reports=True)
+    bad = contracts.blocking(results)
+    assert [(r.contract, r.kind) for r in bad] == [("report_keys_not_null", "reports")]
+
+
+def test_bad_reports_hold_back_only_the_reports(landed):
+    root, _ = landed
+    drops = [
+        d
+        for d in landing.drops(root / "landing")
+        if (root / "landing" / "reports" / f"arrival={d}").exists()
+        and (root / "landing" / "attempts" / f"arrival={d}").exists()
+    ]
+    drop = drops[len(drops) // 2]
+    bad = root / "landing-badreports"
+    if not bad.exists():
+        shutil.copytree(root / "landing", bad)
+    f = next((bad / "reports" / f"arrival={drop}").glob("*.parquet"))
+    new = f.with_suffix(".new")
+    duckdb.sql(
+        f"copy (select * replace (null::timestamp as reported_ts) from read_parquet('{posix(f)}')) "
+        f"to '{posix(new)}' (format parquet)"
+    )
+    f.unlink()
+    new.rename(f)
+    lake = new_lake(root, "badreports", bad)
+    lake.load_pending()
+    # the drop itself is loaded: its transactions are not punished for a malformed reports file
+    assert lake.ledger(drop)[0] == "loaded"
+    held = lake.con.sql(f"select message from ops.load_ledger where drop_id = '{drop}'").fetchall()[
+        0
+    ][0]
+    assert "reports held back" in held and "report_keys_not_null" in held
+    n_tx = lake.con.sql(
+        f"select count(*) from lake.attempts where filename like '%drop-{drop}-%'"
+    ).fetchall()[0][0]
+    assert n_tx > 0
+    assert (
+        lake.con.sql(
+            f"select count(*) from lake.reports where filename like '%drop-{drop}-%'"
+        ).fetchall()[0][0]
+        == 0
+    )
+    # every other drop's reports are present
+    assert lake.con.sql("select count(*) from lake.reports").fetchall()[0][0] > 0
+    lake.close()
+
+
+def test_full_run_resolves_all_out_of_order_reports(landed):
+    root, _ = landed
+    lake = new_lake(root, "orphans")
+    results = lake.load_pending()
+    assert not [r for r in results if r.status == "quarantined"]
+    assert warehouse.orphan_reports(lake.con) == 0  # every report found its event in the end
+    lake.close()
