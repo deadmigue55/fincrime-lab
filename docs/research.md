@@ -53,6 +53,11 @@ published aggregates. Numbers below are the anchors and their confidence.
 | SPEI share under 10,000 pesos | 62% of operations in 2014, 94% in 2025 | **[to verify]** opinion article citing Banxico |
 | Default user transfer limit (MTU) | 12,500 pesos if the customer sets none | **[to verify]**, year unclear |
 | Adults 18-70 with a formal financial product | 76.5% in 2024 (ENIF, INEGI/CNBV) | **[checked]** INEGI press release |
+| Formal savings account by sex | 63.0% overall; women 58.6%, men 68.0% | **[checked]** ENIF 2024 press release, read from the PDF text |
+| Account opened via internet or a non-bank app | 10.3% of adults in 2024 (2.7% in 2021) | **[checked]** same release, chart 3 |
+| Account holders using a phone app | 69.1% (54.3% in 2021); ATM use fell 16.8 points | **[checked]** same release |
+| CoDi / DiMo | 38.0% know CoDi, 12.8% of those use it; 18.5% know DiMo, 6.8% of those use it | **[checked]** same release |
+| Population by state | 32 states, total 126,014,024 (2020 census) | **[checked]** INEGI via Wikipedia table |
 | Fraud claims, H1 2025 | 2.484M claims, MXN 10,714M claimed, MXN 2,556M refunded (about a quarter) | **[checked]** press reports of CONDUSEF |
 | Fraud claims, Jan-Sep 2025 | 3.82M claims (72% of all), MXN 16,678M | **[to verify]** attributed to the Buro de Entidades Financieras |
 | Mule accounts blocked 2014-2024 | 44,899 accounts of 6,941 people (UIF) | **[checked]** press report |

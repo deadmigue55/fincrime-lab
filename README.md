@@ -3,7 +3,7 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 1 of 11** done (scaffold, `doctor`, CI). Next: the synthetic Mexican bank (step 2).
+> Status: **step 2 in progress** (2a done: customers, accounts, identifiers). Next: genuine transactions.
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
