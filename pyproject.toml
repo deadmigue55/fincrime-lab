@@ -47,10 +47,12 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["B011"]
+"tests/**" = ["B011", "E501"]  # SQL strings in tests
 "src/fincrime/bank/acceptance.py" = ["E501"]  # SQL and report prose read better on long lines
 "src/fincrime/figures.py" = ["E501"]  # chart titles and SQL are text
 "src/fincrime/ingest/report.py" = ["E501"]  # report prose
+"src/fincrime/lake/*.py" = ["E501"]  # SQL strings
+"src/fincrime/cli.py" = ["E501"]  # help text and status lines
 
 # ── Tests ──
 [tool.pytest.ini_options]

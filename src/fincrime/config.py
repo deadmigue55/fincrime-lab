@@ -46,6 +46,16 @@ class Paths:
         return self.data / "processed"
 
     @property
+    def landing(self) -> Path:
+        """Daily drops as the source systems would deliver them."""
+        return self.processed / "landing"
+
+    @property
+    def lake(self) -> Path:
+        """The Parquet lake, partitioned by event day."""
+        return self.processed / "lake"
+
+    @property
     def database(self) -> Path:
         """Local DuckDB file holding the marts."""
         return self.data / "fincrime.duckdb"

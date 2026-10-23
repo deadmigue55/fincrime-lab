@@ -89,6 +89,85 @@ def cmd_figures(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lake_export(args: argparse.Namespace) -> int:
+    """Split a built bank into daily landing drops."""
+    from pathlib import Path
+
+    from fincrime.lake import landing
+
+    paths = get_paths().ensure()
+    bank = Path(args.bank) if args.bank else paths.processed / "bank"
+    counts = landing.export_landing(bank, paths.landing)
+    for kind, n in counts.items():
+        print(f"  {kind:<9} {n:>12,} rows")
+    print(f"{len(landing.drops(paths.landing))} daily drops in {paths.landing}")
+    return 0
+
+
+def cmd_lake_load(args: argparse.Namespace) -> int:
+    """Load pending drops into the lake and refresh the marts."""
+    import time
+
+    from fincrime.lake.loader import Lake
+
+    paths = get_paths().ensure()
+    lake = Lake(paths.landing, paths.lake, paths.database)
+    t0 = time.time()
+    try:
+        todo = lake.pending()
+        if args.force:
+            from fincrime.lake import landing
+
+            todo = landing.drops(paths.landing)
+        print(f"{len(todo)} drops to load")
+        quarantined = 0
+        from fincrime.lake import warehouse
+
+        warehouse.refresh_dims(lake.con, paths.landing)
+        for i, drop_id in enumerate(todo[: args.limit], 1):
+            r = lake.load_drop(drop_id, force=args.force)
+            quarantined += r.status == "quarantined"
+            if (
+                r.status == "quarantined"
+                or r.warnings
+                or i % 25 == 0
+                or i == len(todo[: args.limit])
+            ):
+                note = f"  FAILED: {', '.join(r.failed)}" if r.failed else ""
+                note += f"  warnings: {', '.join(r.warnings)}" if r.warnings else ""
+                print(
+                    f"[{i}/{len(todo[: args.limit])}] {drop_id}: {r.status} {r.rows:,} rows{note}"
+                )
+        print(f"done in {time.time() - t0:.0f}s, {quarantined} quarantined")
+        return 1 if quarantined else 0
+    finally:
+        lake.close()
+
+
+def cmd_lake_status(_: argparse.Namespace) -> int:
+    """Summarise the load ledger and the data-quality results."""
+    from fincrime.lake import warehouse
+
+    paths = get_paths()
+    con = warehouse.connect(paths.database, paths.lake)
+    print(
+        "ledger:",
+        con.execute(
+            "select status, count(*), sum(source_rows) from ops.load_ledger group by 1"
+        ).fetchall(),
+    )
+    print(
+        "contracts failed:",
+        con.execute(
+            "select contract, severity, count(*) from ops.dq_results where not passed group by 1, 2 order by 3 desc"
+        ).fetchall(),
+    )
+    print(
+        "marts:", con.execute("select count(*), min(day), max(day) from mart.daily_kpis").fetchall()
+    )
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -196,6 +275,19 @@ def build_parser() -> argparse.ArgumentParser:
     figs.add_argument("--dir", default=None, help="folder of the build")
     figs.add_argument("--out", default="docs/img", help="output folder (default: docs/img)")
     figs.set_defaults(func=cmd_figures)
+
+    lake = sub.add_parser("lake", help="the data platform: landing, lake, marts")
+    lake_sub = lake.add_subparsers(dest="action", required=True)
+    exp = lake_sub.add_parser("export-landing", help="split a built bank into daily drops")
+    exp.add_argument("--bank", default=None, help="folder of the build")
+    exp.set_defaults(func=cmd_lake_export)
+    load = lake_sub.add_parser("load", help="load pending drops, run contracts, refresh marts")
+    load.add_argument("--limit", type=int, default=None, help="load at most this many drops")
+    load.add_argument("--force", action="store_true", help="reload every drop")
+    load.set_defaults(func=cmd_lake_load)
+    lake_sub.add_parser("status", help="ledger and contract summary").set_defaults(
+        func=cmd_lake_status
+    )
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)
