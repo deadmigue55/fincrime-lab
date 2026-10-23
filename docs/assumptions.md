@@ -66,6 +66,53 @@ Other simplifications: ATM amounts are rounded to whole hundreds, minimum event 
 pesos, internal counterparties are drawn uniformly from customers already onboarded, and no
 balances are tracked (outflows are scaled to income instead).
 
+## Planted fraud and laundering
+
+Prevalence has **no sourced value**. CONDUSEF figures count claims, not fraud, and there is no
+denominator (see `research.md`). These rates are chosen so a full build has enough cases to
+evaluate methods; every headline result is repeated at half and double these rates.
+
+| Parameter | Value | Status | Note |
+|---|---|---|---|
+| `ato_per_1000_per_year` | 4.0 | assumption | Account-takeover victims per 1,000 customers per year of exposure |
+| `card_testing_per_1000_per_year` | 6.0 | assumption | Card-testing victims, same unit |
+| `mule_rings_per_100k` | 25 | assumption | Mule rings per 100,000 customers over the whole window. The UIF reports 44,899 blocked accounts in 2014-2024, with no per-bank rate |
+| `ring_size_range` | 4 to 12 | assumption | Mule accounts per ring |
+| `ring_device_pool` | 2 | assumption | Phones shared by every account and attack of a ring |
+| `scatter_gather_per_ring` | 2.0 | assumption | Mean laundering episodes of this kind per ring (Poisson) |
+| `structuring_per_ring` | 2.0 | assumption | Same, for structuring |
+| `structuring_threshold_mxn` | 15,000 | assumption | An illustrative internal cash-review line. The regulatory reporting thresholds were not verified and are not used |
+| `laundering_amount_median` | 250,000 | assumption | MXN moved by one scatter-gather (log-normal, sigma 0.6) |
+| `ato_income_range` | 0.4 to 1.5 | assumption | Amount drained, times the victim's monthly income |
+| `card_test_count_range` | 5 to 20 | assumption | Small test charges before cashing out |
+| `card_test_amount_range` | 10 to 50 MXN | assumption | Test charges are tiny |
+| `cashout_income_range` | 0.3 to 1.0 | assumption | First large purchase, times monthly income |
+| `retry_prob` | 70% | assumption | Attacker retries, smaller, after a blocked transfer |
+| `max_attempts_ato` | 3 | assumption | Attempts per takeover, halving each time |
+| `ato_clone_device_share` | 30% | assumption | Takeovers made from a clone of the victim's own phone, which the new-device rule cannot see |
+| `aged_mule_preference` | 50% | assumption | Takeovers that choose a mule account older than 14 days, dodging the young-beneficiary rule |
+| `abort_after_declines` | 4 | assumption | A card tester gives up after this many blocked charges in a row |
+| `stepup_pass_genuine` | 97% | assumption | Genuine customers who pass an extra verification (3% friction) |
+| `stepup_pass_attacker` | 25% | assumption | Attackers who defeat it (SIM swap, stolen code) |
+| `report_prob` | ATO 92%, card testing 80% | assumption | Victims who ever report. Unreported fraud is invisible |
+| `report_delay_median_days` | ATO 2, card testing 30 | assumption | Chargeback labels arrive 30-120 days late per a practitioner guide (secondary source); takeovers are noticed sooner |
+| `report_delay_sigma` | 0.8 | assumption | Log-normal spread of the delay |
+| `mule_forward_minutes` | 20 to 360 | assumption | Delay before a mule moves stolen money on |
+| `mule_skim` | 3% | assumption | The share a mule keeps at each hop |
+
+**The baseline rules are a policy, not an assumption.** `RulePolicy` (in `policy.py`) holds the
+thresholds of the bank's real-time rules (velocity, new device with a large amount, young
+beneficiary, night-time, very large amounts). Changing them is how step 8 runs experiments. The
+attackers react to them in the ways listed above (retry smaller, give up, clone a phone, use a
+seasoned mule), which keeps the baseline from catching everything simply because the simulator
+and the rules were written by the same author.
+
+How the three layers relate: the bank sees every attempt and the decision made; whether an
+attempt was fraud (`is_fraud`, `crime_class`, `fraud_type`, `episode_id`, `ring_id`) is latent;
+the only fraud label the bank ever observes is `fraud_reports`, which covers a fraction of
+losses and arrives late. Laundering is never reported in this table: it is found by the
+investigations of module `aml`.
+
 ## Identifiers
 
 CURP and CLABE are generated in the real format with deliberately wrong check digits, and the

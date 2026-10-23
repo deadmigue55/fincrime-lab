@@ -114,6 +114,37 @@ class Assumptions:
             "other": 0.05,
         }
     )
+
+    # Fraud and laundering that gets planted (all rates are assumptions, see methodology.md)
+    ato_per_1000_per_year: float = 4.0  # account-takeover victims per 1,000 customers a year
+    card_testing_per_1000_per_year: float = 6.0  # card-testing victims per 1,000 customers a year
+    mule_rings_per_100k: float = 25.0  # mule rings per 100,000 customers over the whole window
+    ring_size_range: tuple[int, int] = (4, 12)  # mule accounts per ring
+    ring_device_pool: int = 2  # phones shared by all accounts and attacks of one ring
+    scatter_gather_per_ring: float = 2.0  # mean laundering episodes of each kind per ring
+    structuring_per_ring: float = 2.0
+    structuring_threshold_mxn: float = 15_000.0  # illustrative internal cash-review line
+    laundering_amount_median: float = 250_000.0  # MXN moved by one scatter-gather
+    ato_income_range: tuple[float, float] = (0.4, 1.5)  # drained amount, times monthly income
+    card_test_count_range: tuple[int, int] = (5, 20)  # small test charges before cashing out
+    card_test_amount_range: tuple[float, float] = (10.0, 50.0)
+    cashout_income_range: tuple[float, float] = (0.3, 1.0)  # first large purchase, times income
+    retry_prob: float = 0.70  # attacker tries again, smaller, after a blocked transfer
+    max_attempts_ato: int = 3
+    ato_clone_device_share: float = 0.30  # takeovers that reuse a clone of the victim's own phone
+    aged_mule_preference: float = 0.50  # takeovers that pick a mule account older than 14 days
+    abort_after_declines: int = 4  # card testers give up after this many blocked charges in a row
+    stepup_pass_genuine: float = 0.97  # customers who pass an extra verification
+    stepup_pass_attacker: float = 0.25  # attackers who pass it (SIM swap, stolen OTP)
+    report_prob: dict[str, float] = field(
+        default_factory=lambda: {"ato": 0.92, "card_testing": 0.80}
+    )
+    report_delay_median_days: dict[str, float] = field(
+        default_factory=lambda: {"ato": 2.0, "card_testing": 30.0}
+    )
+    report_delay_sigma: float = 0.8  # sigma of the log of the delay until a victim reports
+    mule_forward_minutes: tuple[int, int] = (20, 360)  # delay before a mule moves stolen funds on
+    mule_skim: float = 0.03  # share of the funds a mule keeps
     mcc_mix_online: dict[str, float] = field(
         default_factory=lambda: {
             "marketplace": 0.35,
@@ -181,4 +212,53 @@ PROVENANCE: dict[str, tuple[str, str]] = {
     "payday_boost": ("assumption", "spending and cash use rise around pay days"),
     "mcc_mix_pos": ("assumption", "merchant category mix of in-person card payments"),
     "mcc_mix_online": ("assumption", "merchant category mix of online card payments"),
+    "ato_per_1000_per_year": (
+        "assumption",
+        "no denominator for a per-account rate; CONDUSEF counts claims, not fraud",
+    ),
+    "card_testing_per_1000_per_year": (
+        "assumption",
+        "same; set so evaluation has enough cases, see sensitivity",
+    ),
+    "mule_rings_per_100k": (
+        "assumption",
+        "UIF blocked 44,899 accounts in 2014-2024 but no per-bank rate exists",
+    ),
+    "ring_size_range": ("assumption", "small cells of mule accounts"),
+    "ring_device_pool": ("assumption", "rings reuse a few phones, a typical graph signal"),
+    "scatter_gather_per_ring": ("assumption", "laundering episodes per ring"),
+    "structuring_per_ring": ("assumption", "laundering episodes per ring"),
+    "structuring_threshold_mxn": (
+        "assumption",
+        "illustrative; regulatory reporting thresholds were not verified and are not used",
+    ),
+    "laundering_amount_median": ("assumption", "illustrative"),
+    "ato_income_range": (
+        "assumption",
+        "attackers drain a large share of what the victim earns in a month",
+    ),
+    "card_test_count_range": ("assumption", "typical card-testing burst size"),
+    "card_test_amount_range": ("assumption", "testers use tiny charges"),
+    "cashout_income_range": ("assumption", "first large purchase after tests pass"),
+    "retry_prob": ("assumption", "attacker adaptation within one episode"),
+    "max_attempts_ato": ("assumption", "attempts per takeover"),
+    "abort_after_declines": ("assumption", "attacker adaptation within one episode"),
+    "stepup_pass_genuine": ("assumption", "friction on genuine customers"),
+    "stepup_pass_attacker": ("assumption", "share of attackers who defeat extra verification"),
+    "report_prob": ("assumption", "share of victims who report; unreported fraud is invisible"),
+    "report_delay_median_days": (
+        "assumption",
+        "chargeback labels arrive 30-120 days late (practitioner guide); ATO noticed sooner",
+    ),
+    "report_delay_sigma": ("assumption", "log-normal delay"),
+    "mule_forward_minutes": ("assumption", "mules move money on quickly"),
+    "mule_skim": ("assumption", "the mule's cut"),
+    "ato_clone_device_share": (
+        "assumption",
+        "attacker adaptation: device cloning defeats the new-device rule",
+    ),
+    "aged_mule_preference": (
+        "assumption",
+        "attacker adaptation: seasoned mule accounts defeat the young-beneficiary rule",
+    ),
 }

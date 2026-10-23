@@ -23,6 +23,7 @@ from fincrime.bank.customers import rng_for
 
 CHUNK_CUSTOMERS = 25_000
 MIRROR_OFFSET = 1 << 50  # event_id of the receiving side of an internal transfer
+ATTACK_OFFSET = 1 << 56  # event ids of planted fraud and laundering start here
 SEQ_BITS = 20  # event_id = customer_id << 20 | sequence (up to ~1M events per customer)
 
 EVENT_SCHEMA: dict[str, pl.DataType] = {
@@ -41,6 +42,8 @@ EVENT_SCHEMA: dict[str, pl.DataType] = {
     "is_fraud": pl.Boolean,
     "fraud_type": pl.String,
     "episode_id": pl.Int64,
+    "crime_class": pl.String,
+    "ring_id": pl.Int64,
 }
 
 # type -> (channel, direction, counterparty kind, device used?)
@@ -291,6 +294,8 @@ def _chunk_events(
         is_fraud=pl.lit(False),
         fraud_type=pl.lit(None, dtype=pl.String),
         episode_id=pl.lit(None, dtype=pl.Int64),
+        crime_class=pl.lit(None, dtype=pl.String),
+        ring_id=pl.lit(None, dtype=pl.Int64),
     )
     return events.select(list(EVENT_SCHEMA)).cast(EVENT_SCHEMA)
 
