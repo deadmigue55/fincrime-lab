@@ -1,0 +1,14 @@
+# Store text files with LF line endings in the repo, on every OS
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.xlsx binary
+*.parquet binary
+*.duckdb binary
+*.sqlite binary
+*.png binary
+*.pdf binary
