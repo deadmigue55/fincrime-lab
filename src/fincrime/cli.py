@@ -56,6 +56,39 @@ def cmd_bank_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_bank_check(args: argparse.Namespace) -> int:
+    """Run the acceptance checks on a built bank and print or write the report."""
+    from pathlib import Path
+
+    from fincrime.bank import acceptance
+    from fincrime.bank.assumptions import Assumptions
+
+    folder = Path(args.dir) if args.dir else get_paths().processed / "bank"
+    a = Assumptions(n_customers=args.customers, seed=args.seed)
+    checks = acceptance.run_checks(a, folder)
+    report = acceptance.render_markdown(checks, a)
+    if args.report:
+        Path(args.report).write_text(report, encoding="utf-8")
+        print(f"wrote {args.report}")
+    for c in checks:
+        print(f"  {c.kind:<4} {c.name:<48} {c.observed}  (expected {c.expected})")
+    failed = [c for c in checks if c.kind == "fail"]
+    print(f"{len(failed)} checks failed" if failed else "All acceptance checks pass.")
+    return 1 if failed else 0
+
+
+def cmd_figures(args: argparse.Namespace) -> int:
+    """Draw the README figures from a built bank."""
+    from pathlib import Path
+
+    from fincrime import figures
+
+    folder = Path(args.dir) if args.dir else get_paths().processed / "bank"
+    for path in figures.make_figures(folder, Path(args.out)):
+        print(f"wrote {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(prog="fincrime", description=__doc__)
@@ -73,6 +106,17 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--seed", type=int, default=2026)
     build.add_argument("--out", default=None, help="output folder (default: data/processed/bank)")
     build.set_defaults(func=cmd_bank_build)
+    check = bank_sub.add_parser("check", help="acceptance checks on a built bank")
+    check.add_argument("--customers", type=int, default=50_000, help="customers used in the build")
+    check.add_argument("--seed", type=int, default=2026)
+    check.add_argument("--dir", default=None, help="folder of the build")
+    check.add_argument("--report", default=None, help="write a Markdown report to this path")
+    check.set_defaults(func=cmd_bank_check)
+
+    figs = sub.add_parser("figures", help="draw the README figures from a built bank")
+    figs.add_argument("--dir", default=None, help="folder of the build")
+    figs.add_argument("--out", default="docs/img", help="output folder (default: docs/img)")
+    figs.set_defaults(func=cmd_figures)
     return parser
 
 

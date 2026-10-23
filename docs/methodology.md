@@ -101,3 +101,6 @@ every claim checkable beats a large one with soft edges.
 | 2026-10-22 | Synthetic Mexican bank plus public benchmarks | No Mexican transaction data is public; benchmarks guard against circularity |
 | 2026-10-22 | Generator built as simulator with a policy layer | A/B tests and reject inference need counterfactuals |
 | 2026-10-22 | Protocol fixed before modelling | Avoid tuning the protocol to the results |
+| 2026-10-22 | Attackers adapt (retry smaller, clone devices, seasoned mules) | Rules and simulator share an author; without adaptation the baseline would catch most fraud by construction |
+| 2026-10-22 | All attack randomness drawn before the policy decides; event ids derived from episode ids | Same seed under two policies must give the same world, for clean A/B tests |
+| 2026-10-22 | Fraud prevalence is a named assumption with sensitivity, not calibrated | CONDUSEF counts claims and there is no denominator |
