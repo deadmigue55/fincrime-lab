@@ -3,7 +3,7 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 2 in progress** (2a done: customers, accounts, identifiers). Next: genuine transactions.
+> Status: **step 2 in progress** (2a customers, 2b genuine transactions done). Next: fraud and laundering attacks, policy layer.
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project

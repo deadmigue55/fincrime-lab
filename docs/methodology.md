@@ -84,7 +84,7 @@ tolerances, tested in CI on a small build and in the README on the full one:
 - identifiers valid in format, invalid by design, and unique;
 - reproducible: same seed gives byte-identical Parquet;
 - planted fraud and laundering rates match the declared assumptions exactly (they are inputs);
-- reconciliation: every transaction has a customer, every balance is non-negative where the product forbids it.
+- reconciliation: every transaction has a customer, every event references a customer who already exists, and no balances are modelled (outflows are scaled to income).
 
 ## 5. Scope guard
 
