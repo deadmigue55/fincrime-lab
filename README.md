@@ -3,8 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 2 of 11 done**: the synthetic bank is built, tested and reproducible.
-> Next: public benchmarks (step 3) and the data platform (step 4).
+> Status: **step 3 of 11 in progress**: the synthetic bank is done; four public benchmark datasets
+> are being ingested (three loaded, IEEE-CIS waiting on a Kaggle rules click). Next: the data
+> platform (step 4).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -85,11 +86,39 @@ build **18 of 18 checks pass**, for example:
 Identifiers (CURP, CLABE) have the right format but invalid check digits and synthetic bank
 codes on purpose, so none can belong to a real person or account.
 
+## Public benchmarks (step 3)
+
+The simulator is checked against four public datasets so no result rests on it alone. Each is
+downloaded from Kaggle with a checksum manifest, converted to typed Parquet and row-counted
+against what the authors published:
+
+```powershell
+uv run fincrime ingest list
+uv run fincrime ingest download baf
+uv run fincrime ingest convert baf
+uv run fincrime ingest report          # writes docs/benchmarks.md
+```
+
+| Dataset | What it adds | Licence |
+|---|---|---|
+| IBM AMLworld (Small, Medium, and Large for the scale test) | 5M to 180M transactions with labelled laundering and the planted schemes | CDLA-Sharing-1.0 |
+| Bank Account Fraud (NeurIPS 2022) | six 1M-row account-opening datasets, 8 months, built-in bias and drift | CC BY-NC-ND 4.0 |
+| Sparkov | 1.85M synthetic card transactions with merchants and geography | to confirm |
+| IEEE-CIS | 590k real e-commerce transactions | competition rules |
+
+Loading them corrected or sharpened several things recorded in
+[docs/research.md](docs/research.md): BAF has exactly 1,000,000 rows per file and a 1.103% fraud
+rate in all six; AMLworld's pattern files cover only 62% to 65% of laundering transactions in the
+high-illicit-ratio sets and 24% to 29% in the low-illicit-ratio sets; and in AMLworld the payment
+format ACH carries a 0.75% laundering rate against about 0.02% for every other format, a simulator
+artefact a real bank would not have. Raw files are never committed, and because of the licences
+only aggregate results are published. The full fact sheet is [docs/benchmarks.md](docs/benchmarks.md).
+
 ## Data
 
 - **Banco Sintético**: described above. Not a real institution.
 - **Public benchmarks** (step 3): IBM AMLworld, Bank Account Fraud (NeurIPS 2022), IEEE-CIS,
-  Sparkov, used as external validation so no result rests on the simulator alone.
+  Sparkov, used as external validation so no result rests on the simulator alone (see above).
 
 See [docs/research.md](docs/research.md) for sources and how sure we are of each number, and
 [docs/methodology.md](docs/methodology.md) for the evaluation protocol and what synthetic data can

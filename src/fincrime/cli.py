@@ -89,6 +89,85 @@ def cmd_figures(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest_list(_: argparse.Namespace) -> int:
+    """Show every source, its licence, and what is downloaded and converted."""
+    from fincrime.ingest import manifest
+    from fincrime.ingest.sources import SOURCES
+
+    paths = get_paths()
+    raw = {(r.source, r.file) for r in manifest.read(paths.manifest, manifest.RawRecord)}
+    conv = {
+        (r.source, r.file): r
+        for r in manifest.read(paths.processed / "MANIFEST.csv", manifest.ParquetRecord)
+    }
+    for s in SOURCES.values():
+        print(f"{s.key}  [{s.license}]")
+        print(f"  publish rule: {s.publish_rule}")
+        for f in s.files:
+            state = (
+                "converted" if (s.key, f) in conv else ("downloaded" if (s.key, f) in raw else "-")
+            )
+            extra = (
+                f"  {conv[(s.key, f)].rows:,} rows ({conv[(s.key, f)].expected_rows})"
+                if state == "converted"
+                else ""
+            )
+            print(f"    {state:<10} {f}{extra}")
+    return 0
+
+
+def cmd_ingest_report(args: argparse.Namespace) -> int:
+    """Write a fact sheet of the benchmark datasets on disk."""
+    from pathlib import Path
+
+    from fincrime.ingest.report import render_markdown
+
+    text = render_markdown()
+    Path(args.out).write_text(text, encoding="utf-8")
+    print(f"wrote {args.out}")
+    return 0
+
+
+def _ingest_files(args: argparse.Namespace):
+    from fincrime.ingest.kaggle_client import select_files
+    from fincrime.ingest.sources import SOURCES
+
+    source = SOURCES[args.source]
+    return source, select_files(source, args.files, args.all, args.sizes, args.kinds)
+
+
+def cmd_ingest_download(args: argparse.Namespace) -> int:
+    """Download a source's files from Kaggle (resumable, checksummed)."""
+    from fincrime.ingest.kaggle_client import RulesNotAccepted, download
+
+    source, files = _ingest_files(args)
+    try:
+        for f in files:
+            r = download(source.key, f, force=args.force)
+            note = "already downloaded" if r.skipped else f"{r.bytes / 1e6:,.1f} MB"
+            print(f"[{source.key}] {f}: {note}")
+    except RulesNotAccepted as err:
+        print(f"ERROR: {err}")
+        return 2
+    return 0
+
+
+def cmd_ingest_convert(args: argparse.Namespace) -> int:
+    """Convert downloaded files to Parquet and verify row counts where known."""
+    from fincrime.ingest.convert import convert_file
+
+    source, files = _ingest_files(args)
+    bad = 0
+    for f in files:
+        rec = convert_file(source.key, f, force=args.force)
+        if rec is None:
+            print(f"[{source.key}] {f}: already converted")
+            continue
+        print(f"[{source.key}] {f}: {rec.rows:,} rows ({rec.expected_rows})")
+        bad += "MISMATCH" in rec.expected_rows
+    return 1 if bad else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(prog="fincrime", description=__doc__)
@@ -117,6 +196,27 @@ def build_parser() -> argparse.ArgumentParser:
     figs.add_argument("--dir", default=None, help="folder of the build")
     figs.add_argument("--out", default="docs/img", help="output folder (default: docs/img)")
     figs.set_defaults(func=cmd_figures)
+
+    ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
+    ing_sub = ing.add_subparsers(dest="action", required=True)
+    ing_sub.add_parser("list", help="sources, licences and status").set_defaults(
+        func=cmd_ingest_list
+    )
+    rep = ing_sub.add_parser("report", help="fact sheet of the converted datasets")
+    rep.add_argument("--out", default="docs/benchmarks.md")
+    rep.set_defaults(func=cmd_ingest_report)
+    for name, fn, helptext in (
+        ("download", cmd_ingest_download, "download files"),
+        ("convert", cmd_ingest_convert, "convert downloaded files to Parquet"),
+    ):
+        sp = ing_sub.add_parser(name, help=helptext)
+        sp.add_argument("source", choices=["amlworld", "baf", "sparkov", "ieee_cis"])
+        sp.add_argument("--files", nargs="*", help="exact file names")
+        sp.add_argument("--all", action="store_true", help="every file of the source")
+        sp.add_argument("--sizes", nargs="*", help="AMLworld sizes: small medium large")
+        sp.add_argument("--kinds", nargs="*", help="AMLworld kinds: HI LI")
+        sp.add_argument("--force", action="store_true")
+        sp.set_defaults(func=fn)
     return parser
 
 

@@ -53,7 +53,7 @@ Each step is one or more commits, pushed in blocks.
 | 0 | Research, plan, README | docs reviewed |
 | 1 | Package scaffold: uv, config, `doctor`, lint, tests, CI | `uv run fincrime doctor` passes, CI green |
 | 2 | **Done.** Banco Sintético simulator (latent, policy and observed layers) and `assumptions.md` | 18 of 18 acceptance checks pass on a 200,000-customer build, 37 tests, deterministic |
-| 3 | Ingest public benchmarks (Kaggle) with manifest and checksums | all four datasets in Parquet, row counts match published |
+| 3 | **Mostly done.** Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium loaded and row-counted; AMLworld HI-Large downloading; IEEE-CIS waits for the user to accept the Kaggle rules |
 | 4 | Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | 180M-row query timings in the README |
 | 5 | Fraud features in SQL (velocity, windows, device and geo) | feature store table with point-in-time correctness tests |
 | 6 | Fraud models, rules, thresholds, fairness, drift | fixed-FPR report on BAF and the synthetic bank |
