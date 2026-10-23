@@ -23,7 +23,9 @@ payments by merchant category, cash deposits at convenience stores, CoDi/DiMo pa
 onboarding records. Fraud and laundering are **planted with known ground truth**: account takeover,
 card testing, synthetic identities, mule accounts, structuring (pitufeo), scatter-gather, rapid
 pass-through. Because the truth is known, every method can be validated by recovering it, the same
-way the mortality experience study recovered 15 of 15 planted effects. All parameters live in
+way the mortality experience study recovered 15 of 15 planted effects. It is a simulator, not a
+static table: latent truth, a policy layer where rules can approve or decline, and what the bank
+observes, so experiments and selection bias can be tested against the counterfactual. All parameters live in
 `docs/assumptions.md`; nothing claims to describe a real institution.
 
 **Layer B, public benchmarks**, used as external validation so no result rests on our own simulator
@@ -50,7 +52,7 @@ Each step is one or more commits, pushed in blocks.
 |---|---|---|
 | 0 | Research, plan, README | docs reviewed |
 | 1 | Package scaffold: uv, config, `doctor`, lint, tests, CI | `uv run fincrime doctor` passes, CI green |
-| 2 | Banco Sintético generator and `assumptions.md` | 1M-customer-scale build is deterministic and reconciles with the calibration anchors |
+| 2 | Banco Sintético simulator (latent, policy and observed layers) and `assumptions.md` | acceptance tests in `methodology.md` section 4 pass: deterministic, anchors reproduced, planted rates exact |
 | 3 | Ingest public benchmarks (Kaggle) with manifest and checksums | all four datasets in Parquet, row counts match published |
 | 4 | Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | 180M-row query timings in the README |
 | 5 | Fraud features in SQL (velocity, windows, device and geo) | feature store table with point-in-time correctness tests |
@@ -62,7 +64,12 @@ Each step is one or more commits, pushed in blocks.
 | 11 | Dashboard, Quarto report, portfolio card, release 1.0.0 | live URL, tagged release |
 
 Highest-value cut if time is short: steps 1 to 6, then 8. That already covers data engineering,
-fraud modelling and experimentation.
+fraud modelling and experimentation. Priority order of modules: `platform`, `fraud`,
+`experiments`, `risk`, `aml`. A module is not started until the previous one has a README
+section with a figure, an assumptions list, tests and a commit (see `methodology.md` section 5).
+
+The rules for splits, metrics, uncertainty and what synthetic data can and cannot prove are in
+[methodology.md](methodology.md); sources and licences in [research.md](research.md).
 
 ## Principles carried over from the mortality project
 

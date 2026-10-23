@@ -28,7 +28,9 @@ one shared warehouse, and tests every method on data where the answer is known.
   CONDUSEF, UIF). Fraud and laundering are planted with known truth. Not a real institution.
 - **Public benchmarks**: IBM AMLworld, Bank Account Fraud (NeurIPS 2022), IEEE-CIS, Sparkov.
 
-See [docs/research.md](docs/research.md) for sources and how sure we are of each number.
+See [docs/research.md](docs/research.md) for sources and how sure we are of each number, and
+[docs/methodology.md](docs/methodology.md) for the evaluation protocol and what synthetic data can
+and cannot prove.
 
 ## Quick start
 

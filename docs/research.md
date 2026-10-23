@@ -31,9 +31,9 @@ Not found: postings from Nu, Clara, Mercado Pago or Klar. Their requirements are
 
 | Dataset | Facts | Role here |
 |---|---|---|
-| IBM AMLworld (HI/LI x Small/Medium/Large) | Large files ~180M (HI) and ~176M (LI) transactions, ~2.1M accounts; laundering ~1 in 807 (HI) and ~1 in 1,750 (LI) **[checked]**. Published on Kaggle under a CDLA licence; patterns include fan-in/out, cycle, scatter-gather **[memory]** | Scale benchmark and AML module |
-| BAF, Bank Account Fraud (NeurIPS 2022) | Built to capture imbalance, bias and time dynamics **[checked]**. 6 variants of 1M rows, ~1% fraud, 8 months, age as protected attribute **[memory]** | Fraud modelling, fairness, drift |
-| IEEE-CIS (Vesta) | Real e-commerce card-not-present, 590,540 rows, 3.5% fraud, anonymised features **[checked]** | Real-data robustness check |
+| IBM AMLworld (HI/LI x Small/Medium/Large) | Large files ~180M (HI) and ~176M (LI) transactions, ~2.1M accounts; laundering ~1 in 807 (HI) and ~1 in 1,750 (LI) **[checked]**. Fully synthetic multi-agent world; data CSV on Kaggle under **CDLA-Sharing-1.0** (repo code is Apache-2.0) **[checked, GitHub README]**. Laundering patterns (fan-in/out, cycle, scatter-gather and others) are in the paper, not the README **[memory]** | Scale benchmark and AML module |
+| BAF, Bank Account Fraud (NeurIPS 2022) | Built to capture imbalance, bias and time dynamics; generated from a real anonymised bank account-opening dataset; parquet or CSV on Kaggle **[checked]**. Variant count, rows, fraud rate, months, protected attribute and **licence** are not on the GitHub page: 6 variants of 1M rows, ~1% fraud, 8 months, age as protected attribute are **[memory]**, to be confirmed from `documents/datasheet.pdf` at step 3 | Fraud modelling, fairness, drift |
+| IEEE-CIS (Vesta) | Real e-commerce card-not-present, 590,540 rows, 3.5% fraud, anonymised features **[checked]**. Kaggle competition data: rules must be accepted to download; redistribution terms **[to verify]**, treat as not redistributable | Real-data robustness check |
 | Sparkov | Synthetic card fraud with customers, merchants and geography; size differs by version (1.3M to 1.85M rows) **[checked]**, so record the version used | SQL features, geography |
 | ULB credit-card (2013) | 284,807 rows, 492 frauds, PCA features **[checked]** | Not used: every portfolio has it |
 
@@ -49,7 +49,7 @@ published aggregates. Numbers below are the anchors and their confidence.
 | Anchor | Value | Status |
 |---|---|---|
 | SPEI transfers in 2025 | > 7,300 million, +36.8% vs 2024, said by Banxico's governor to the Senate | **[checked]**, press report of the Senate statement |
-| SPEI amount in 2025 | ~600 trillion pesos (STP), mean ~82,000 pesos per transfer (our division) | **[to verify]** against Banxico payment-system tables |
+| SPEI amount in 2025 | ~600 trillion pesos (STP), mean ~82,000 pesos per transfer (our division) | **[to verify]**. Not a retail anchor: the mean is dominated by large interbank and corporate transfers. Retail amounts are calibrated on the share under 10,000 pesos instead |
 | SPEI share under 10,000 pesos | 62% of operations in 2014, 94% in 2025 | **[to verify]** opinion article citing Banxico |
 | Default user transfer limit (MTU) | 12,500 pesos if the customer sets none | **[to verify]**, year unclear |
 | Adults 18-70 with a formal financial product | 76.5% in 2024 (ENIF, INEGI/CNBV) | **[checked]** INEGI press release |
@@ -58,6 +58,14 @@ published aggregates. Numbers below are the anchors and their confidence.
 | Mule accounts blocked 2014-2024 | 44,899 accounts of 6,941 people (UIF) | **[checked]** press report |
 | CNBV fraud-prevention rules | in force 2024 with later delays; per-customer transaction limit; typology and information-sharing duties | **[to verify]** dates conflict between sources |
 | UIF typology structure | method, technique, instrument, case, alert signal, trend | **[checked]** |
+
+**Limits of these anchors.** CONDUSEF figures count *claims* (reclamaciones), not confirmed fraud,
+and about three quarters of the claimed amount is not refunded, so they are neither a fraud rate
+nor a loss figure. We also have no denominator (transactions or active accounts of a comparable
+institution), so a per-transaction fraud rate cannot be derived from them. The synthetic bank's
+fraud prevalence is therefore a **named assumption**, chosen for the evaluation to be meaningful
+(see `methodology.md`), and the CONDUSEF numbers are used only for order of magnitude and for the
+share of fraud by channel once a primary table is found.
 
 Things we did not find and must not invent: the reporting thresholds for unusual and relevant
 operations, the national risk assessment, fraud losses by channel for 2025. Where the generator
@@ -71,6 +79,16 @@ Sources: [Banxico/Senate figures via dplnews](https://dplnews.com/?p=326663),
 [BBVA Research on CNBV delays](https://www.bbvaresearch.com/en/publicaciones/mexico-financial-regulation-march-2025),
 [mule accounts, UIF](https://www.yucatan.com.mx/mexico/2025/08/25/cuentas-mulas-en-mexico-asi-es-el-lavado-de-dinero-que-se-expande-en-bancos.html),
 [UIF typology framework](https://www.veritas.org.mx/Ambito-universitario/Ambito-universitario/Tipologias-emitidas-por-la-uif-en-Mexico).
+
+### Licences and what may be published
+
+- Raw data of every dataset stays out of the repo and out of any public demo bundle.
+- AMLworld is CDLA-Sharing-1.0: derived *data* published must carry the same licence. We publish
+  only aggregate results and figures, plus the code that builds them.
+- BAF and IEEE-CIS terms are not confirmed; same rule, results only, until read at step 3.
+- The synthetic bank is our own work and its sample can be published (it describes no real person).
+- Mexican identifiers (CURP, RFC, CLABE) are generated with the right *format* but random content and a
+  deliberately invalid check digit, so none can belong to a real person.
 
 ## 4. Pitfalls that separate production work from Kaggle work
 

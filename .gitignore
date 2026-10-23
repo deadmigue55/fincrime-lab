@@ -6,6 +6,7 @@ data/processed/*
 *.duckdb
 *.duckdb.wal
 *.parquet
+!tests/fixtures/*.parquet
 *.csv.gz
 
 # Secrets
