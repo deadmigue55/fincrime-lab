@@ -26,8 +26,8 @@ def _signed_log(x: np.ndarray) -> np.ndarray:
     return np.sign(x) * np.log1p(np.abs(x))
 
 
-def make(name: str, seed: int = 0):
-    """An unfitted model. Categorical codes are the first ``N_CAT`` columns of the design matrix."""
+def make(name: str, seed: int = 0, n_cat: int = N_CAT):
+    """An unfitted model. Categorical codes are the first ``n_cat`` columns of the design matrix."""
     if name == "logistic":
         numeric = Pipeline(
             [
@@ -49,7 +49,7 @@ def make(name: str, seed: int = 0):
             ]
         )
         pre = ColumnTransformer(
-            [("cat", cats, list(range(N_CAT))), ("num", numeric, slice(N_CAT, None))]
+            [("cat", cats, list(range(n_cat))), ("num", numeric, slice(n_cat, None))]
         )
         return Pipeline([("pre", pre), ("lr", LogisticRegression(C=1.0, max_iter=400))])
     settings = {
@@ -60,16 +60,18 @@ def make(name: str, seed: int = 0):
     return HistGradientBoostingClassifier(
         learning_rate=0.1,
         l2_regularization=1.0,  # without it the Newton step explodes on rare weighted positives
-        categorical_features=list(range(N_CAT)),
+        categorical_features=list(range(n_cat)),
         early_stopping=False,
         random_state=seed,
         **settings,
     )
 
 
-def fit(name: str, x: np.ndarray, y: np.ndarray, weight: np.ndarray, seed: int = 0):
+def fit(
+    name: str, x: np.ndarray, y: np.ndarray, weight: np.ndarray, seed: int = 0, n_cat: int = N_CAT
+):
     """Fit a candidate with sample weights (the genuine events were down-sampled)."""
-    model = make(name, seed)
+    model = make(name, seed, n_cat)
     if name == "logistic":
         model.fit(x, y, lr__sample_weight=weight)
     else:

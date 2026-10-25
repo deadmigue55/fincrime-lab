@@ -137,3 +137,52 @@ def cluster_bootstrap(
     out = {key: tuple(np.percentile(v, [2.5, 97.5])) for key, v in results.items()}
     out["clusters"] = int((n_pos > 0).sum())
     return out
+
+
+def compare_with_flags(
+    y: np.ndarray,
+    score: np.ndarray,
+    flagged: np.ndarray,
+    cluster: np.ndarray,
+    reps: int = 300,
+    seed: int = 0,
+    top_share: float = 0.12,
+) -> dict:
+    """An existing rule set (``flagged``) against a model read at the *same flag share*.
+
+    Returns point estimates and 95% cluster-bootstrap intervals for the rule set's recall and flag
+    share, the model's recall at that share, and their difference. In every replicate the model is
+    cut at the replicate's own rule flag share, so the comparison is at equal review workload.
+    """
+    y, flagged = np.asarray(y, dtype=bool), np.asarray(flagged, dtype=bool)
+    _, cl = np.unique(cluster, return_inverse=True)
+    n_cl = cl.max() + 1
+    n_events = np.bincount(cl, minlength=n_cl).astype(float)
+    n_pos = np.bincount(cl, weights=y, minlength=n_cl)
+    n_flag = np.bincount(cl, weights=flagged, minlength=n_cl)
+    n_hit = np.bincount(cl, weights=flagged & y, minlength=n_cl)
+    order = _order(score)[: int(np.ceil(top_share * len(y))) + 1]
+    top_cl, top_y = cl[order], y[order].astype(float)
+
+    def one(m: np.ndarray) -> tuple[float, float, float]:
+        total_n, total_p = float(m @ n_events), float(m @ n_pos)
+        share = float(m @ n_flag) / total_n
+        flagged_cum, hit = np.cumsum(m[top_cl]), np.cumsum(m[top_cl] * top_y)
+        k = np.searchsorted(flagged_cum, share * total_n, side="right")
+        return float(m @ n_hit) / total_p, share, (hit[k - 1] / total_p if k > 0 else 0.0)
+
+    rule_recall, share, model_recall = one(np.ones(n_cl))
+    rng = np.random.default_rng(seed)
+    draws = np.array(
+        [
+            one(np.bincount(rng.integers(0, n_cl, n_cl), minlength=n_cl).astype(float))
+            for _ in range(reps)
+        ]
+    )
+    ci = lambda v: tuple(np.percentile(v, [2.5, 97.5]))  # noqa: E731
+    return {
+        "rule_recall": (rule_recall, *ci(draws[:, 0])),
+        "flag_share": (share, *ci(draws[:, 1])),
+        "model_recall_at_share": (model_recall, *ci(draws[:, 2])),
+        "difference": (model_recall - rule_recall, *ci(draws[:, 2] - draws[:, 0])),
+    }

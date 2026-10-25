@@ -263,6 +263,43 @@ def cmd_fraud_evaluate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fraud_report(args: argparse.Namespace) -> int:
+    """Metrics, intervals, cost, fairness, drift and figures from the saved scores."""
+    from fincrime.fraud import report
+
+    paths = get_paths()
+    results = Path(args.results) if args.results else paths.processed / "fraud_results"
+    out = report.build(results, Path(args.img))
+    print(
+        f"wrote {results / 'results.json'}; {out['test_rows']:,} test attempts, {out['test_fraud']} fraud"
+    )
+    return 0
+
+
+def cmd_fraud_baf(args: argparse.Namespace) -> int:
+    """The same pipeline on the BAF benchmark (external check)."""
+    from fincrime.fraud import baf
+
+    paths = get_paths()
+    out = Path(args.results) if args.results else paths.processed / "fraud_results"
+    summary = baf.run(paths.processed / "baf" / "Base.parquet", out)
+    print(f"chosen {summary['chosen']}; TPR at 5% FPR {summary['test']['tpr_at_fpr'][0.05][0]:.3f}")
+    return 0
+
+
+def cmd_fraud_ablation(args: argparse.Namespace) -> int:
+    """Leave-one-feature-family-out on the validation block."""
+    import json
+
+    from fincrime.fraud import evaluate
+
+    paths = get_paths()
+    out = Path(args.results) if args.results else paths.processed / "fraud_results"
+    chosen = json.loads((out / "selection.json").read_text(encoding="utf-8"))["chosen"]
+    evaluate.ablation(paths.processed / "features" / "fraud_events", paths.lake, out, chosen)
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -420,6 +457,16 @@ def build_parser() -> argparse.ArgumentParser:
     ev = fraud_sub.add_parser("evaluate", help="fit and score the models under the fixed protocol")
     ev.add_argument("--out", default=None, help="folder (default: data/processed/fraud_results)")
     ev.set_defaults(func=cmd_fraud_evaluate)
+    rp = fraud_sub.add_parser("report", help="results, intervals, fairness, drift and figures")
+    rp.add_argument("--results", default=None, help="folder of the saved scores")
+    rp.add_argument("--img", default="docs/img", help="figure folder")
+    rp.set_defaults(func=cmd_fraud_report)
+    ab = fraud_sub.add_parser("ablation", help="leave-one-feature-family-out on validation")
+    ab.add_argument("--results", default=None, help="folder of the saved scores")
+    ab.set_defaults(func=cmd_fraud_ablation)
+    bf = fraud_sub.add_parser("baf", help="the same pipeline on the BAF benchmark")
+    bf.add_argument("--results", default=None, help="folder for baf_results.json")
+    bf.set_defaults(func=cmd_fraud_baf)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)

@@ -144,3 +144,36 @@ def run(store: Path, lake: Path, out: Path, candidates=models.CANDIDATES) -> dic
         json.dumps(summary, indent=2, default=str), encoding="utf-8"
     )
     return summary
+
+
+def ablation(store: Path, lake: Path, out: Path, name: str) -> dict:
+    """Leave one feature family out, refit on the selection block, score the validation block.
+
+    Uses validation only (never the test block). Shows which signals carry the result and
+    guards against a single leaky feature doing all the work.
+    """
+    from fincrime.fraud import features
+
+    con = labels.connect(store, lake)
+    x, y, w, vocab, _ = train_set(con, SELECTION_TRAIN, "obs")
+    val = pl.concat([labels.frame(con, a, b) for a, b in months(*VALIDATION)])
+    xv, _ = labels.design(val, vocab)
+    yv = val["y_true"].to_numpy()
+    family = {f.name: f.family for f in features.catalogue()}
+    cols = [*labels.CATEGORICAL, *labels.NUMERIC]
+    result = {}
+    for drop in [None, *sorted({family[c] for c in cols})]:
+        keep = [i for i, c in enumerate(cols) if drop is None or family[c] != drop]
+        n_cat = sum(cols[i] in labels.CATEGORICAL for i in keep)
+        model = models.fit(name, x[:, keep], y, w, n_cat=n_cat)
+        s = models.predict(model, xv[:, keep])
+        result[drop or "all features"] = {
+            "features": len(keep),
+            "recall_at_0.5%": metrics.recall_at_share(yv, s, (SELECT_SHARE,))[SELECT_SHARE],
+            "ap": metrics.average_precision(yv, s),
+        }
+        print(f"  without {drop}: {result[drop or 'all features']}", flush=True)
+    (out / "ablation.json").write_text(
+        json.dumps(result, indent=2, default=float), encoding="utf-8"
+    )
+    return result
