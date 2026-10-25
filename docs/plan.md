@@ -57,7 +57,7 @@ Each step is one or more commits, pushed in blocks.
 | 4 | **Nearly done.** Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | platform built and tested (16 tests, 597-drop run); final 180M-row timings pending a capped rerun |
 | 5 | **Done.** Fraud features in SQL (velocity, windows, device sharing; no geo, the simulator has none) | 27.2M-row feature store, point-in-time by event time and knowledge time, oracle + truncation + leak-guard tests ([fraud-features.md](fraud-features.md)) |
 | 6 | **Done.** Fraud models, rules, thresholds, fairness, drift | Protocol fixed first; 4 candidates; recall at fixed budgets with account-level intervals on 9.1M test attempts; BAF check; ablation ([fraud-models.md](fraud-models.md)) |
-| 7 | Chargeback maturation and fraud loss model | completion factors and capital figures with intervals |
+| 7 | **Done.** Chargeback maturation and fraud loss model | delay model, IBNR backtest and 200-bank calibration, frequency-severity capital with intervals ([fraud-loss.md](fraud-loss.md)) |
 | 8 | Experiment lab | planted effects recovered within CIs, false-positive rate of A/A tests at 5% |
 | 9 | AML module | typology coverage table and workload curve |
 | 10 | Governance pack | model cards, validation report |

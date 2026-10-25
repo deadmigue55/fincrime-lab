@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 6 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
-> point-in-time feature store and the fraud models are built and tested; the final 180-million-row
-> benchmark run is pending. Next: chargeback maturation and the fraud loss model (step 7).
+> Status: **step 7 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
+> point-in-time feature store, the fraud models and the fraud loss model are built and tested; the final 180-million-row
+> benchmark run is pending. Next: the experiment lab (step 8).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -23,7 +23,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 | `fraud` | Point-in-time features, time-based validation, delayed labels, fixed review budgets, cost-optimal thresholds, fairness, drift, BAF check | done |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | planned |
 | `aml` | Rules vs graph analytics, typology coverage, alert workload | planned |
-| `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses, model cards | planned |
+| `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses with capital intervals, 200-bank calibration; model cards still to come | done (model cards: planned) |
 
 ## The synthetic bank (step 2)
 
@@ -171,6 +171,28 @@ block touched once, intervals by account).
   (applicants 50 and over flagged 11.4% of the time against 3.8%). Both are reported.
 
 Full write-up, ablation, fairness and drift: [docs/fraud-models.md](docs/fraud-models.md).
+
+## Fraud loss and IBNR (step 7)
+
+Fraud is reported late, so the newest months always look cleaner than they are. This step completes
+them (a right-truncated delay model against three chain-ladder variants), then builds a
+frequency-severity loss model with an exact FFT aggregate, and checks every interval against a
+truth the simulator keeps.
+
+![Chargeback maturation](docs/img/risk_maturity.png)
+
+- Delay recovered within its intervals (takeover median 1.95 days against 2 planted, card testing
+  30.5 against 30). 95.5% of reports arrive within 120 days, which independently supports step 6's
+  purge gap.
+- Newest six months: **454 reported, completed to 566 (95% interval 529 to 612), truth 538.**
+- Annual loss MXN **9.0M** (7.4 to 11.1), **capital 2.1M** at 99.5% (1.1 to 3.8). Out of time:
+  predicted 2.62M against 2.66M realised.
+- **Run in 200 independent simulated banks:** the 90% interval covered the realised loss in 92%.
+  The method picked before fitting (chain ladder by type) was the worst calibrated of the four there
+  (69% coverage for a 95% interval); the delay model was used instead, and both are reported.
+
+Full write-up, severity-model failure and fix, scenarios and limits:
+[docs/fraud-loss.md](docs/fraud-loss.md).
 
 ## Data
 

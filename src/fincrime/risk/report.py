@@ -303,14 +303,20 @@ def _severity_block(claims: pl.DataFrame) -> tuple[dict, dict, str]:
     kind = max(totals, key=lambda x: totals[x])
     out["chosen"] = kind
     out["total_heldout_loglik"] = {k: _finite(v) for k, v in totals.items()}
+    return out, {"qq": severity_qq(claims, kind)}, kind
+
+
+def severity_qq(claims: pl.DataFrame, kind: str) -> dict:
+    """Observed claim sizes against the quantiles of the chosen severity model (by simulation)."""
     seen = delay.visible(claims, END)
-    qq = {}
+    rng = np.random.default_rng(0)
+    out = {}
     for k in cl.TYPES:
         a = np.sort(seen.filter(pl.col("fraud_type") == k)["amount"].to_numpy())
-        s = lossmodel.fit_severity(a, "lognormal")
+        model = lossmodel.fit_severity(a, kind)
         p = (np.arange(1, len(a) + 1) - 0.5) / len(a)
-        qq[k] = (a, np.exp(s.mu + s.sigma * stats.norm.ppf(p)))
-    return out, {"qq": qq}, kind
+        out[k] = (a, np.quantile(model.sample(400_000, rng), p))
+    return out
 
 
 def _loss_block(
@@ -440,7 +446,7 @@ def _fig_maturity(res: dict, plot: dict, img: Path) -> None:
             label=f"{TYPE_NAME[k]}: fitted",
         )
     ax.axvline(120, color=fg.MUTED, linewidth=1)
-    ax.text(123, 0.04, "120 days:\nstep 6 purge gap", fontsize=8, color=fg.MUTED)
+    ax.text(123, 0.30, "120 days:\nstep 6 purge gap", fontsize=8, color=fg.MUTED)
     ax.set_xlabel("Days from the loss to the report", color=fg.INK2)
     ax.set_ylabel("Share of eventual reports arrived", color=fg.INK2)
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
@@ -519,10 +525,10 @@ def _fig_backtest(res: dict, plot: dict, img: Path) -> None:
         ax.set_xticks(
             range(3), ["M1 pooled\nchain ladder", "M2 chain ladder\nby type", "M4 delay\nmodel"]
         )
-        ax.set_ylim(0, 1.05)
+        ax.set_ylim(0, 1.18)
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-        ax.set_ylabel("Share of worlds where the 95% interval covers the truth", color=fg.INK2)
-        ax.legend(frameon=False, fontsize=8, loc="lower right")
+        ax.set_ylabel("95% interval coverage (share of worlds)", color=fg.INK2)
+        ax.legend(frameon=False, fontsize=8, loc="upper left")
         ax.set_title(
             f"{res['worlds']['worlds']} independent banks, as of 31 Dec 2024",
             loc="left",
@@ -554,13 +560,16 @@ def _fig_frequency_severity(res: dict, plot: dict, img: Path) -> None:
         ax.loglog(model, emp, ".", color=color, markersize=3, alpha=0.6, label=TYPE_NAME[k])
     lim = [50, 2e5]
     ax.plot(lim, lim, color=fg.INK2, linewidth=1)
-    ax.set_xlabel("Lognormal quantile (pesos)", color=fg.INK2)
+    ax.set_xlabel("Quantile of the fitted model (pesos)", color=fg.INK2)
     ax.set_ylabel("Observed claim (pesos)", color=fg.INK2)
     ax.legend(frameon=False, fontsize=8, loc="upper left")
     ax.set_title(
-        "Severity: lognormal fit, quantile against quantile", loc="left", fontsize=10, color=fg.INK2
+        f"Severity: chosen model ({res['loss']['severity_kind']}), quantiles",
+        loc="left",
+        fontsize=10,
+        color=fg.INK2,
     )
-    fg._finish(fig, img / "risk_frequency_severity.png", "Frequency and severity of fraud claims", "Per 1,000 open accounts and month (dashed: fitted rate); claim sizes against the fitted lognormal. Both on the reported basis.", left=0.07, wspace=0.22)  # fmt: skip
+    fg._finish(fig, img / "risk_frequency_severity.png", "Frequency and severity of fraud claims", "Per 1,000 open accounts and month (dashed: fitted rate); claim sizes against the chosen severity model. Reported basis.", left=0.07, wspace=0.22)  # fmt: skip
 
 
 def _fig_aggregate(res: dict, plot: dict, img: Path) -> None:
@@ -635,7 +644,7 @@ def _fig_calibration(res: dict, plot: dict, img: Path) -> None:
     ax.set_xlabel("Where the realised loss falls in the forecast distribution (PIT)", color=fg.INK2)
     ax.set_ylabel("Share of worlds", color=fg.INK2)
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    ax.set_title(f"Flat means calibrated: 90% interval covered {100 * w['loss']['coverage_90']:.0f}% of {w['worlds']} worlds", loc="left", fontsize=10, color=fg.INK2)  # fmt: skip
+    ax.set_title(f"The 90% interval covered {100 * w['loss']['coverage_90']:.0f}% of {w['worlds']} worlds", loc="left", fontsize=10, color=fg.INK2)  # fmt: skip
 
     ax = axes[1]
     worlds = plot["worlds"]
