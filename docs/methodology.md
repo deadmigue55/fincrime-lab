@@ -93,6 +93,57 @@ section with a figure, an assumptions list, tests, and a commit.** If time runs 
 priority is `platform`, `fraud`, `experiments`, then `risk`, then `aml`. A smaller project with
 every claim checkable beats a large one with soft edges.
 
+## 7. Step 6 protocol for the synthetic bank (fixed before any model was fitted, 2026-10-25)
+
+Written after step 5 and after looking only at counts (positives per month, report delays,
+incumbent flag rate), never at a model score.
+
+**Population.** Every outgoing attempt (27.2M), scored before the decision, approved or not.
+Truth label: `is_fraud` (account takeover and card testing, 8,552 events). Laundering is the AML
+module's problem and is not a positive here.
+
+**Splits and the purge gap.** Report delay has a median of 25 days and 95% of reports arrive within
+120 days, so the purge gap is **120 days**.
+
+| Block | Events | Labels | Used for |
+|---|---|---|---|
+| Selection train | 2024-01-01 to 2024-08-31 | reports received before 2025-01-01 | fitting the candidates |
+| Validation | 2025-01-01 to 2025-02-28 | truth | choosing a candidate |
+| Final train | 2024-01-01 to 2024-11-30 | reports received before 2025-04-01 | refitting the chosen candidate |
+| **Test** | **2025-04-01 to 2025-06-30** | truth | touched once, at the end |
+
+Training uses **observed labels**: an approved event is fraud only if it was reported before the
+training date; blocked attempts have no observed outcome and are left out of training. All frauds
+and a 2% sample of the other events are kept, with weight 50 on the sampled ones.
+
+**Candidates (four, and the number is reported with the result):** logistic regression on log-scaled
+features; gradient boosting with depth 3 and 200 rounds; depth 6 and 200 rounds; depth 6, 400
+rounds and L2 = 1. Selection rule: highest recall at a 0.5% flag share on validation; ties go to the
+simpler model. Nothing is tuned on the test block.
+
+**Baseline.** The incumbent rule policy, as an operating point: its own flag rate and recall on the
+same test block (it cannot be moved along a curve). The model is also read at the incumbent's flag
+share, so the two are compared at equal review workload.
+
+**Headline metrics.** Recall at flag shares 0.1%, 0.5%, 1% and at false-positive rates 0.5%, 1%, 5%,
+each with a 95% interval from a cluster bootstrap by account (300 replicates), and the number of
+accounts with fraud behind it. PR-AUC, ROC-AUC and Brier score as secondary.
+
+**Diagnostic, not a competitor.** The same chosen model trained on **true labels over all attempts**
+(impossible at a real bank) shows what delayed, incomplete and approved-only labels cost.
+
+**Cost.** Expected cost = pesos of fraud not flagged + review cost per flagged event + friction cost
+per flagged genuine event. Unit costs are assumptions: review MXN 15, friction MXN 40, with the
+cost-optimal threshold reported at half and double both. A flagged fraud is assumed prevented.
+
+**Fairness and drift.** Flag rate among genuine events (the burden of false alarms) and recall by
+age band, income band, sex and state at the shared 0.5% threshold, each with a cluster-bootstrap
+interval; groups whose interval is wider than 0.3 are reported as inconclusive. Drift: score
+and feature PSI by month against the training block, and recall at the fixed threshold by month.
+
+**External check.** The same pipeline is run on BAF (train months 0-5, test months 6-7, the dataset's
+own protocol) and reported next to the synthetic result; when they disagree both are shown.
+
 ## 6. Decision log
 
 | Date | Decision | Why |
@@ -104,3 +155,4 @@ every claim checkable beats a large one with soft edges.
 | 2026-10-22 | Attackers adapt (retry smaller, clone devices, seasoned mules) | Rules and simulator share an author; without adaptation the baseline would catch most fraud by construction |
 | 2026-10-22 | All attack randomness drawn before the policy decides; event ids derived from episode ids | Same seed under two policies must give the same world, for clean A/B tests |
 | 2026-10-22 | Fraud prevalence is a named assumption with sensitivity, not calibrated | CONDUSEF counts claims and there is no denominator |
+| 2026-10-25 | Step 6 protocol fixed before fitting: 120-day purge, four candidates, test touched once, cost units named | Methodology rule: no bending the protocol to the results |
