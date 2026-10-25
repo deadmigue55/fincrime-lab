@@ -208,8 +208,9 @@ def _frequency_block(claims: pl.DataFrame, expo: pl.DataFrame, reps: int, seed: 
         stat, p = lossmodel.trend_test(cnt, e[m])
         mu = f.rate * e[m]
         rates, alphas = [], []
-        for r in range(min(reps, 300)):
-            g = lossmodel.fit_nb(done.draws[r][m, j], e[m])
+        rng = np.random.default_rng(seed + 11 + j)
+        for _ in range(min(reps, 300)):
+            g = lossmodel.fit_nb(_draw(f, e[m], rng), e[m])
             rates.append(g.rate)
             alphas.append(g.alpha)
         out["types"][k] = {
@@ -226,11 +227,26 @@ def _frequency_block(claims: pl.DataFrame, expo: pl.DataFrame, reps: int, seed: 
             "monthly_rate_per_1000": [1000 * float(c / x) for c, x in zip(cnt, e[m], strict=True)],
         }
     both = done.mask.all(axis=1)
-    c = done.point[both]
+    c = (
+        done.point[both] / e[both, None]
+    )  # rates, so the common growth of exposure does not fake a correlation
     out["corr_ato_vs_card_testing"] = (
         float(np.corrcoef(c[:, 0], c[:, 1])[0, 1]) if both.sum() > 3 else None
     )
     return out
+
+
+def _draw(fit: lossmodel.NBFit, exposure: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    mu = fit.rate * exposure
+    return (
+        rng.poisson(mu)
+        if fit.alpha < 1e-8
+        else rng.poisson(rng.gamma(1.0 / fit.alpha, fit.alpha * mu))
+    )
+
+
+def _finite(x: float) -> float | None:
+    return float(x) if np.isfinite(x) else None
 
 
 def _severity_block(claims: pl.DataFrame) -> tuple[dict, dict, str]:
@@ -238,7 +254,7 @@ def _severity_block(claims: pl.DataFrame) -> tuple[dict, dict, str]:
     train = ever.filter(pl.col("loss_ts") < pl.datetime(2025, 1, 1))
     test = ever.filter(pl.col("loss_ts") >= pl.datetime(2025, 1, 1))
     out: dict = {"candidates": {}, "tested_on": {}}
-    totals = {"lognormal": 0.0, "splice": 0.0}
+    totals = {"lognormal": 0.0, "splice": 0.0, "splice_nonneg": 0.0}
     for k in cl.TYPES:
         a, b = (
             train.filter(pl.col("fraud_type") == k)["amount"].to_numpy(),
@@ -249,8 +265,16 @@ def _severity_block(claims: pl.DataFrame) -> tuple[dict, dict, str]:
             s = lossmodel.fit_severity(a, kind)
             ll = lossmodel.heldout_loglik(s, b)
             totals[kind] += len(b) * ll
-            entry = {"mu": s.mu, "sigma": s.sigma, "heldout_loglik": ll}
-            if kind == "splice":
+            pmf = lossmodel.discretise(s)
+            entry = {
+                "mu": s.mu,
+                "sigma": s.sigma,
+                "heldout_loglik": _finite(ll),
+                "model_mean": float(pmf @ (np.arange(len(pmf)) * lossmodel.GRID)),
+                "fit_data_mean": float(a.mean()),
+                "heldout_mean": float(b.mean()),
+            }
+            if kind != "lognormal":
                 entry |= {
                     "threshold": s.u,
                     "xi": s.xi,
@@ -263,7 +287,7 @@ def _severity_block(claims: pl.DataFrame) -> tuple[dict, dict, str]:
             out["candidates"].setdefault(k, {})[kind] = entry
     kind = max(totals, key=lambda x: totals[x])
     out["chosen"] = kind
-    out["total_heldout_loglik"] = totals
+    out["total_heldout_loglik"] = {k: _finite(v) for k, v in totals.items()}
     seen = delay.visible(claims, END)
     qq = {}
     for k in cl.TYPES:
@@ -323,7 +347,7 @@ def _loss_block(
             cells=2**19,
         )
         out["gross_up"][str(g)] = {"point": f["point"], "interval": pipeline.intervals(f["reps"])}
-    alt = "splice" if kind == "lognormal" else "lognormal"
+    alt = "lognormal" if kind != "lognormal" else "splice_nonneg"
     f = pipeline.forecast(
         claims, expo, END, fut, reps=min(reps, 200), seed=seed, severity_kind=alt, cells=2**19
     )
@@ -573,7 +597,7 @@ def _fig_aggregate(res: dict, plot: dict, img: Path) -> None:
     ax.set_ylabel("Million pesos (95% interval)", color=fg.INK2)
     ax.legend(frameon=False, fontsize=8, loc="upper left")
     ax.set_title("By exposure scenario", loc="left", fontsize=10, color=fg.INK2)
-    fg._finish(fig, img / "risk_aggregate.png", "Fraud loss over the next twelve months, and the capital behind it", "Reported basis (claims the bank will learn of). Compound negative binomial and lognormal, exact by FFT; bootstrap interval includes the unreported claims and the fitting.", left=0.07, wspace=0.22)  # fmt: skip
+    fg._finish(fig, img / "risk_aggregate.png", "Fraud loss over the next twelve months, and the capital behind it", "Reported basis: claims the bank will learn of. Compound distribution by FFT; 95% bars are a bootstrap of counts and claim sizes.", left=0.07, wspace=0.22)  # fmt: skip
 
 
 def _fig_calibration(res: dict, plot: dict, img: Path) -> None:

@@ -129,3 +129,50 @@ def test_the_calibration_summary_scores_coverage_and_the_pit():
         and m4["mae"] == pytest.approx(0.1)
     )
     assert out["loss"]["coverage_90"] == 1.0 and out["delay"]["ato"]["mu_covered"] == 1.0
+
+
+def _attempts(rows):
+    return pl.DataFrame(
+        rows,
+        schema={
+            "episode_id": pl.Int64,
+            "ts": pl.Datetime("us"),
+            "amount": pl.Float64,
+            "is_fraud": pl.Boolean,
+            "crime_class": pl.String,
+            "status": pl.String,
+            "direction": pl.String,
+        },
+        orient="row",
+    )
+
+
+def _episodes(lost):
+    return pl.DataFrame(
+        {"episode_id": [1], "crime_class": ["fraud"], "fraud_type": ["ato"], "lost_amount": [lost]}
+    )
+
+
+def _no_reports():
+    return pl.DataFrame(schema={"episode_id": pl.Int64, "reported_ts": pl.Datetime("us")})
+
+
+def test_a_loss_cut_off_by_the_end_of_the_data_is_tolerated_but_a_mid_window_gap_is_a_bug():
+    d = datetime
+    # the episode says 300 pesos were lost but only 100 are in the data, and it sits on the last day
+    edge = _attempts(
+        [
+            (1, d(2025, 6, 30, 23, 30), 100.0, True, "fraud", "approved", "out"),
+            (2, d(2025, 6, 30, 23, 59), 5.0, False, "genuine", "approved", "out"),
+        ]
+    )
+    out = claims.build_claims(edge, _episodes(300.0), _no_reports())
+    assert out["amount"].to_list() == [100.0]  # the bank carries what it can see
+    mid = _attempts(
+        [
+            (1, d(2024, 3, 1, 10), 100.0, True, "fraud", "approved", "out"),
+            (2, d(2025, 6, 30, 23, 59), 5.0, False, "genuine", "approved", "out"),
+        ]
+    )
+    with pytest.raises(ValueError, match="disagrees"):
+        claims.build_claims(mid, _episodes(300.0), _no_reports())

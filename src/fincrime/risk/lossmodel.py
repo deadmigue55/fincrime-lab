@@ -188,7 +188,13 @@ class Severity:
 
 
 def fit_severity(amounts: np.ndarray, kind: str = "lognormal") -> Severity:
-    """``kind`` is ``"lognormal"`` or ``"splice"`` (body censored at the 90th percentile, GPD above)."""
+    """``kind``: ``"lognormal"``; ``"splice"`` (body censored at the 90th percentile, GPD above); or
+    ``"splice_nonneg"``, the same with the GPD shape held at 0 or above.
+
+    The unconstrained GPD can come out with a negative shape, i.e. a *finite largest possible loss*,
+    which a later, larger claim then contradicts (an infinite penalty out of sample). The constrained
+    version keeps the tail at least exponential, so a bigger claim than any seen is possible.
+    """
     x = np.asarray(amounts, dtype=float)
     x = x[x > 0]
     lx = np.log(x)
@@ -210,6 +216,11 @@ def fit_severity(amounts: np.ndarray, kind: str = "lognormal") -> Severity:
 
     res = optimize.minimize(nll, [lb.mean(), np.log(lb.std() + 1e-6)], method="Nelder-Mead")
     xi, _, beta = stats.genpareto.fit(exc, floc=0.0)
+    if kind == "splice_nonneg" and xi < 0:
+        xi, beta = (
+            0.0,
+            float(exc.mean()),
+        )  # the constrained maximum is on the boundary: exponential tail
     return Severity(
         float(res.x[0]), float(np.exp(res.x[1])), u, len(body) / len(x), float(xi), float(beta)
     )

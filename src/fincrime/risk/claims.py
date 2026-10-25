@@ -14,7 +14,7 @@ for scoring; a real bank has no such file.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -49,10 +49,20 @@ def build_claims(
         .join(rep, on="episode_id", how="left")
         .sort("loss_ts")
     )
-    # the episode table and the event table must agree on what was lost
-    gap = (out["amount"] - out["event_amount"]).abs().max()
-    if gap is not None and gap > 0.01:
-        raise ValueError(f"episode lost_amount disagrees with the approved events by {gap:.2f}")
+    # The episode table and the event table must agree on what was lost, with one exception that
+    # exists only at the edge of the data: an episode that begins in the last day can have a later
+    # event cut off by the end of the window (seed 25 of the calibration has one). The bank only
+    # ever sees the events it has, so the claim carries their sum; anywhere else a gap is a bug.
+    last = attempts.group_by("episode_id").agg(pl.col("ts").max().alias("last_ts"))
+    edge = attempts["ts"].max() - timedelta(days=1)
+    gaps = out.join(last, on="episode_id", how="left").filter(
+        ((pl.col("amount") - pl.col("event_amount")).abs() > 0.01) & (pl.col("last_ts") < edge)
+    )
+    if gaps.height:
+        raise ValueError(
+            f"episode lost_amount disagrees with the approved events in {gaps.height} episodes"
+        )
+    out = out.with_columns(pl.col("event_amount").alias("amount"))
     return out.drop("event_amount")
 
 

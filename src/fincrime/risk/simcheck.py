@@ -33,6 +33,8 @@ from fincrime.risk import claims as cl
 AS_OF = date(2024, 12, 31)
 WINDOW = (date(2025, 1, 1), date(2025, 6, 1))
 PLANTED = {"ato": (2.0, 0.8), "card_testing": (30.0, 0.8)}
+# the severity model the main bank selected on held-out claims (docs/fraud-loss.md); fixed for all worlds
+SEVERITY = "splice_nonneg"
 
 
 def build_world(seed: int, customers: int = 200_000) -> tuple[pl.DataFrame, pl.DataFrame]:
@@ -85,7 +87,15 @@ def one_world(args: tuple[int, int, int, int]) -> dict:
     future = months.filter(pl.col("month") >= WINDOW[0])["accounts"].to_numpy()
     history = months.filter(pl.col("month") < WINDOW[0])
     f = pipeline.forecast(
-        claims, history, AS_OF, future, reps=reps_loss, seed=seed, cells=2**19, keep_pmf=True
+        claims,
+        history,
+        AS_OF,
+        future,
+        reps=reps_loss,
+        seed=seed,
+        severity_kind=SEVERITY,
+        cells=2**19,
+        keep_pmf=True,
     )
     realised = pipeline.realised_loss(claims, *WINDOW)
     pred = f["predictive"]

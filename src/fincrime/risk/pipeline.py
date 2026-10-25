@@ -7,8 +7,11 @@ One function, :func:`forecast`, does for any bank (the main one, or each of the 
 2. fit frequency per fraud type on the months that are at least 95% complete;
 3. fit severity per fraud type on the claims reported so far;
 4. build the loss distribution of a future window of months, by FFT;
-5. repeat 2 to 4 on bootstrap replicates that redraw the unreported claims, the frequency fit and the
-   resampled claims, so that every figure carries the uncertainty of the data behind it.
+5. repeat 2 to 4 on bootstrap replicates: the monthly counts are redrawn from the fitted negative
+   binomial (parametric bootstrap, which carries the sampling error of the rate) and the claims are
+   resampled with replacement for the severity, so every figure carries the uncertainty of the data
+   behind it. The months entering the frequency fit are at least 95% complete, so the remaining
+   uncertainty about their unreported claims is small and is not redrawn.
 """
 
 from __future__ import annotations
@@ -62,6 +65,18 @@ def _amounts(
     return out
 
 
+def simulate_counts(
+    nb: dict[str, lossmodel.NBFit], exposure: np.ndarray, rng: np.random.Generator
+) -> np.ndarray:
+    """One parametric-bootstrap draw of the monthly claim counts, (months, types), from fitted NB models."""
+    out = np.zeros((len(exposure), len(TYPES)))
+    for j, k in enumerate(TYPES):
+        mu = nb[k].rate * exposure
+        a = nb[k].alpha
+        out[:, j] = rng.poisson(mu) if a < 1e-8 else rng.poisson(rng.gamma(1.0 / a, a * mu))
+    return out
+
+
 def _fit(
     counts: np.ndarray, mask: np.ndarray, exposure: np.ndarray, amounts: dict, kind: str
 ) -> lossmodel.Fit:
@@ -88,7 +103,7 @@ def forecast(
     """
     rng = np.random.default_rng(seed)
     e = exposure.sort("month")["accounts"].to_numpy()
-    done = complete(claims, as_of, reps, seed + 1)
+    done = complete(claims, as_of, 1, seed + 1)
     e = e[: len(done.months)]
     point_fit = _fit(done.point, done.mask, e, _amounts(claims, as_of), severity_kind)
     dist = lossmodel.annual_distribution(point_fit, future, gross, cells)
@@ -99,8 +114,14 @@ def forecast(
         "reps": [],
     }
     pmf_sum = np.zeros(cells) if keep_pmf else None
-    for r in range(reps):
-        fit = _fit(done.draws[r], done.mask, e, _amounts(claims, as_of, rng), severity_kind)
+    for _ in range(reps):
+        fit = _fit(
+            simulate_counts(point_fit.nb, e, rng),
+            done.mask,
+            e,
+            _amounts(claims, as_of, rng),
+            severity_kind,
+        )
         d = lossmodel.annual_distribution(fit, future, gross, cells)
         out["reps"].append(lossmodel.summary(d))
         if keep_pmf:
