@@ -55,7 +55,7 @@ Each step is one or more commits, pushed in blocks.
 | 2 | **Done.** Banco Sintético simulator (latent, policy and observed layers) and `assumptions.md` | 18 of 18 acceptance checks pass on a 200,000-customer build, 37 tests, deterministic |
 | 3 | **Mostly done.** Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium loaded and row-counted; AMLworld HI-Large downloading; IEEE-CIS waits for the user to accept the Kaggle rules |
 | 4 | **Nearly done.** Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | platform built and tested (16 tests, 597-drop run); final 180M-row timings pending a capped rerun |
-| 5 | Fraud features in SQL (velocity, windows, device and geo) | feature store table with point-in-time correctness tests |
+| 5 | **Done.** Fraud features in SQL (velocity, windows, device sharing; no geo, the simulator has none) | 27.2M-row feature store, point-in-time by event time and knowledge time, oracle + truncation + leak-guard tests ([fraud-features.md](fraud-features.md)) |
 | 6 | Fraud models, rules, thresholds, fairness, drift | fixed-FPR report on BAF and the synthetic bank |
 | 7 | Chargeback maturation and fraud loss model | completion factors and capital figures with intervals |
 | 8 | Experiment lab | planted effects recovered within CIs, false-positive rate of A/A tests at 5% |

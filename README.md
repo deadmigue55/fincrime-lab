@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 4 of 11 nearly done**: the synthetic bank, four public benchmarks and the
-> data platform are built and tested; the final 180-million-row benchmark run is pending.
-> Next: fraud features and models (steps 5 and 6).
+> Status: **step 5 of 11 done**: the synthetic bank, four public benchmarks, the data platform and
+> a point-in-time fraud feature store are built and tested; the final 180-million-row benchmark
+> run is pending. Next: fraud models, rules and fairness (step 6).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -20,7 +20,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 |---|---|---|
 | `bank` | A simulated Mexican neobank with planted fraud and laundering, calibrated to public data | done |
 | `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | built, final benchmark pending |
-| `fraud` | Time-based validation, delayed labels, fixed false-positive budgets, cost-optimal thresholds, fairness, drift | planned |
+| `fraud` | Point-in-time features (done), time-based validation, delayed labels, fixed false-positive budgets, cost-optimal thresholds, fairness, drift | features done, models next |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | planned |
 | `aml` | Rules vs graph analytics, typology coverage, alert workload | planned |
 | `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses, model cards | planned |
@@ -139,6 +139,16 @@ flowchart LR
     P --> M[DuckDB marts]
     P --> E[eval: ground truth]
 ```
+
+## Fraud features (step 5)
+
+27.2 million outgoing attempts, 37 features, built in SQL and correct in two senses of time:
+event time (no future event leaks) and **knowledge time** (an event that reached the bank two days
+late is not used before it arrived). Three independent tests guard it: a slow Python oracle that
+matches every feature, a truncation test (delete the future and nothing moves) and a leak guard.
+At full scale the planted behaviours show up as they should: account takeovers use a new device
+48.5% of the time against 1.8% for everything else, card-testing bursts average 3.9 attempts in
+10 minutes against 0.01. Details in [docs/fraud-features.md](docs/fraud-features.md).
 
 ## Data
 
