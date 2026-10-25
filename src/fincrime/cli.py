@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from fincrime import __version__
 from fincrime.config import get_paths
@@ -230,6 +231,24 @@ def cmd_lake_status(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fraud_features(args: argparse.Namespace) -> int:
+    """Build the point-in-time fraud feature store from the lake."""
+    from fincrime.fraud import features
+
+    paths = get_paths()
+    out = Path(args.out) if args.out else paths.processed / "features" / "fraud_events"
+    info = features.build(
+        paths.lake,
+        paths.landing,
+        out,
+        first_day=args.first_day,
+        last_day=args.last_day,
+        memory_limit_gb=args.memory_limit_gb,
+    )
+    print(f"wrote {info['rows']:,} rows to {out} in {info['seconds']} s")
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -369,6 +388,21 @@ def build_parser() -> argparse.ArgumentParser:
     brep.add_argument("--out", default="docs/benchmark-scaling.md")
     brep.add_argument("--img", default="docs/img")
     brep.set_defaults(func=cmd_lake_benchmark_report)
+
+    fraud = sub.add_parser("fraud", help="fraud detection: features, labels, models")
+    fraud_sub = fraud.add_subparsers(dest="action", required=True)
+    feat = fraud_sub.add_parser("features", help="build the point-in-time feature store")
+    feat.add_argument(
+        "--out", default=None, help="folder (default: data/processed/features/fraud_events)"
+    )
+    feat.add_argument(
+        "--first-day", default=None, help="score events from this day (history is always complete)"
+    )
+    feat.add_argument("--last-day", default=None, help="score events up to this day")
+    feat.add_argument(
+        "--memory-limit-gb", type=int, default=None, help="DuckDB cap (spills to disk)"
+    )
+    feat.set_defaults(func=cmd_fraud_features)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)
