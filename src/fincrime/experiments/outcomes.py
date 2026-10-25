@@ -54,6 +54,7 @@ class Arm:
     fraud: pl.DataFrame  # one row per approved fraud event, with its row index ``i``
     weekly: dict[str, np.ndarray]  # cumulative (n, WEEKS) outcome tables, by readout basis
     volume: np.ndarray  # (n, 2): approved genuine outgoing count and pesos in the window
+    failed: np.ndarray  # (n,) failed verifications and declines of genuine attempts in the window
 
 
 @dataclass
@@ -154,6 +155,8 @@ def load_arm(path: Path, ids: np.ndarray) -> Arm:
     weekly = {
         "loss": _accumulate(n, row, amount, when, ends),
         "loss_reported": _accumulate(n, row[seen], amount[seen], rep[seen], ends),
+        # losses by loss date that will eventually be reported: what a delay-model readout targets
+        "loss_ultimate": _accumulate(n, row[seen], amount[seen], when[seen], ends),
     }
     g = genuine.filter(pl.col("ts") >= T0)
     gi = _index(ids, g["customer_id"])
@@ -164,9 +167,11 @@ def load_arm(path: Path, ids: np.ndarray) -> Arm:
         _accumulate(n, gi[failed], np.ones(failed.sum()), ts[failed], ends), 1.0
     )
     weekly["stepups"] = _accumulate(n, gi[stepped], np.ones(stepped.sum()), ts[stepped], ends)
+    y, failed = _metrics(ids, fraud, genuine, T0, T_END + timedelta(seconds=1))
     return Arm(
         name=path.name,
-        y=_metrics(ids, fraud, genuine, T0, T_END + timedelta(seconds=1))[0],
+        y=y,
+        failed=failed,
         fraud=fraud,
         weekly=weekly,
         volume=_volume(n, volume, ids, True),
@@ -192,29 +197,26 @@ def load(root: Path, bank_dir: Path, treatments: list[str] | None = None) -> Ben
     return Bench(ids=ids, x=x, pre=pre, tenure=tenure, arms=arms)
 
 
-def completion_inputs(bank_dir: Path, as_of: date) -> tuple[dict, dict]:
-    """Delay model and report rate per fraud type, fitted on claims reported before ``as_of``.
+def completion_fits(bank_dir: Path, as_of: date) -> dict:
+    """Delay model per fraud type, fitted by the step 7 code on claims reported by ``as_of``.
 
-    Both come from the step 7 code and from history only (the bank as it stood before the
-    experiment), so using them in a readout during the experiment is legitimate.
+    History only (the bank as it stood before the experiment), so using it in a readout during the
+    experiment is legitimate. It carries no report rate: the share of fraud that is never reported
+    cannot be learned from reports, and a gross-up for it is a named assumption (docs/fraud-loss.md),
+    not something this readout estimates.
     """
-    claims = cl.load_claims(bank_dir)
-    fits = delay.fit_by_type(claims, as_of)
-    cut = datetime(as_of.year, as_of.month, as_of.day) - timedelta(days=120)
-    rates = {}
-    for k in cl.TYPES:
-        old = claims.filter((pl.col("fraud_type") == k) & (pl.col("loss_ts") < cut))
-        rates[k] = cl.visible(old, as_of).height / old.height if old.height else 1.0
-    return fits, rates
+    return delay.fit_by_type(cl.load_claims(bank_dir), as_of)
 
 
-def weighted_weekly(arm: Arm, fits: dict, rates: dict, n: int) -> np.ndarray:
+def weighted_weekly(arm: Arm, fits: dict, n: int) -> np.ndarray:
     """Cumulative reported loss, each claim scaled up by the chance it would be reported by now.
 
-    A claim that happened ``a`` days before a look and has been reported counts ``1 / (F(a) r)``
-    times its amount, where ``F`` is the delay distribution of its fraud type and ``r`` the share of
-    claims that are ever reported. Unreported claims count zero, so on average the weighted figure is
-    the true loss. Weights grow quickly for the newest claims, which is the price of reading early.
+    A claim whose first loss was ``a`` days before a look and that has been reported counts
+    ``1 / F(a)`` times its amount, where ``F`` is the delay distribution of its fraud type. Claims
+    not yet reported count zero, so on average the weighted figure is the loss of the claims that
+    will eventually be reported. Weights grow quickly for the newest claims, the price of reading
+    early. An episode that began before the experiment has its clock started at its first event
+    after the start, which slightly overweights it; there are very few.
     """
     first = arm.fraud.group_by("episode_id").agg(pl.col("ts").min().alias("first_ts"))
     ev = arm.fraud.join(first, on="episode_id").filter(pl.col("reported_ts").is_not_null())
@@ -231,6 +233,6 @@ def weighted_weekly(arm: Arm, fits: dict, rates: dict, n: int) -> np.ndarray:
         c = np.ones(ok.sum())
         for t in cl.TYPES:
             s = kind[ok] == t
-            c[s] = fits[t].cdf(age[s]) * rates[t]
+            c[s] = fits[t].cdf(age[s])
         np.add.at(out[:, k], row[ok], amount[ok] / np.maximum(c, 1e-3))
     return out

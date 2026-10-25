@@ -45,7 +45,10 @@ def task(args: tuple) -> tuple[str, dict]:
     elif kind == "permutation":
         reps, shuffles, seed = cfg
         key = "permutation_aa"
-        payload = {"summary": study.permutation_a_a(bench, [0, 1, 2, 3], reps, shuffles, seed)}
+        payload = {
+            "summary": study.permutation_a_a(bench, [0, 1, 2, 3], reps, shuffles, seed),
+            "reps": reps,
+        }
     elif kind == "srm":
         reps, seed = cfg
         key = "srm"
@@ -71,19 +74,18 @@ def task(args: tuple) -> tuple[str, dict]:
         }
     elif kind == "delay":
         treatment, reps, seed = cfg
-        fits, rates = outcomes.completion_inputs(Path(bank), AS_OF)
+        fits = outcomes.completion_fits(Path(bank), AS_OF)
         n = bench.n
         # (control, treated), the order the look table expects
         w = np.stack(
             [
-                outcomes.weighted_weekly(bench.arms["baseline"], fits, rates, n),
-                outcomes.weighted_weekly(bench.arms[treatment], fits, rates, n),
+                outcomes.weighted_weekly(bench.arms["baseline"], fits, n),
+                outcomes.weighted_weekly(bench.arms[treatment], fits, n),
             ]
         )
         out = study.delayed_readout(bench, treatment, w, reps, seed)
         key = f"delay:{treatment}"
         payload = {k: v for k, v in out.items()}
-        payload["rates"] = {k: float(v) for k, v in rates.items()}
         payload["median_days"] = {k: float(f.median_days) for k, f in fits.items()}
     elif kind == "selection":
         treatment, metric, reps, seed = cfg
@@ -107,8 +109,8 @@ def plan(root: Path, bank: Path, scale: float = 1.0) -> list[tuple]:
     tasks += [
         ("replicate", root_s, bank_s, (t, r(2000), SEED + 1 + i)) for i, t in enumerate(TREATMENTS)
     ]
-    tasks.append(("permutation", root_s, bank_s, (r(500), 999, SEED + 10)))
-    tasks.append(("srm", root_s, bank_s, (r(300), SEED + 11)))
+    tasks.append(("permutation", root_s, bank_s, (r(2000), 499, SEED + 10)))
+    tasks.append(("srm", root_s, bank_s, (r(1000), SEED + 11)))
     for m_i, metric in enumerate(("loss", "friction")):
         for t_i, t in enumerate((None, *TREATMENTS)):
             tasks.append(

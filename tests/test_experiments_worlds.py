@@ -101,9 +101,9 @@ def test_completion_weights_scale_reported_loss_up_and_never_below_it(bench):
     from datetime import date
 
     b, _, base = bench
-    fits, rates = outcomes.completion_inputs(base, date(2024, 12, 31))
+    fits = outcomes.completion_fits(base, date(2024, 12, 31))
     arm = b.arms["baseline"]
-    w = outcomes.weighted_weekly(arm, fits, rates, b.n)
+    w = outcomes.weighted_weekly(arm, fits, b.n)
     reported = arm.weekly["loss_reported"]
     assert (w >= reported - 1e-6).all()  # every weight is at least 1
     assert w[:, -1].sum() > reported[:, -1].sum()
@@ -111,4 +111,7 @@ def test_completion_weights_scale_reported_loss_up_and_never_below_it(bench):
     assert (w[:, 1].sum() / max(reported[:, 1].sum(), 1e-9)) >= (
         w[:, -1].sum() / reported[:, -1].sum()
     )
-    assert all(0 < r <= 1 for r in rates.values())
+    assert set(fits) == {"ato", "card_testing"}
+    # the readout targets losses that will eventually be reported, never more than all losses
+    assert (arm.weekly["loss_ultimate"] <= arm.weekly["loss"] + 1e-6).all()
+    assert (arm.weekly["loss_reported"] <= arm.weekly["loss_ultimate"] + 1e-6).all()

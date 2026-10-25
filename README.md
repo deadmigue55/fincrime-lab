@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 7 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
-> point-in-time feature store, the fraud models and the fraud loss model are built and tested; the final 180-million-row
-> benchmark run is pending. Next: the experiment lab (step 8).
+> Status: **step 8 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
+> point-in-time feature store, the fraud models and the fraud loss model and the experiment lab are built and tested; the final 180-million-row
+> benchmark run is pending. Next: AML (step 9).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -21,7 +21,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 | `bank` | A simulated Mexican neobank with planted fraud and laundering, calibrated to public data | done |
 | `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | built, final benchmark pending |
 | `fraud` | Point-in-time features, time-based validation, delayed labels, fixed review budgets, cost-optimal thresholds, fairness, drift, BAF check | done |
-| `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | planned |
+| `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | done |
 | `aml` | Rules vs graph analytics, typology coverage, alert workload | planned |
 | `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses with capital intervals, 200-bank calibration; model cards still to come | done (model cards: planned) |
 
@@ -193,6 +193,30 @@ truth the simulator keeps.
 
 Full write-up, severity-model failure and fix, scenarios and limits:
 [docs/fraud-loss.md](docs/fraud-loss.md).
+
+## Experiment lab (step 8)
+
+The simulator builds the same bank under two rule sets, so every customer has an outcome under both
+and the true effect of a rule is known exactly. An A/B test is then a random split of those
+customers, repeated thousands of times, and every method is scored against the truth.
+
+![Peeking](docs/img/exp_peeking.png)
+
+- A/A tests reject at 4.0% to 5.0% on six metrics and three estimators; planted effects are
+  recovered with 94% to 97% interval coverage. CUPED and regression adjustment cut variance by
+  35% on step-ups and by nothing on fraud loss (a finding: past loss does not predict future loss).
+- **Fraud outcomes are underpowered.** A rule that cuts loss by 29% is detected 32% of the time at
+  100,000 customers per arm; the friction guardrail is decided in 1 to 3 weeks.
+- **Peeking weekly declares a winner in 28% of A/A tests**; alpha-spending (Pocock, O'Brien-Fleming)
+  holds 3% to 5%, at a cost in power that is reported.
+- Late labels understate a rule's effect by 36% to 78% in 60 simulated banks; delay-model
+  weighting removes the bias.
+- A rollout by customer age overstates the effect 3.2 times; a failure rate per step-up stays flat
+  (0.98x) while customers failed rise 2.4 times.
+
+Two checks fell short and are reported as such (takeover-loss A/A at 4.0% against a 4.1% band edge;
+a sample-ratio check misses an outcome-dependent table 16% of the time). Full write-up, power
+tables and the ten protocol amendments: [docs/experiment-lab.md](docs/experiment-lab.md).
 
 ## Data
 

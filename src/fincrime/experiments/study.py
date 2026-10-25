@@ -147,12 +147,15 @@ def permutation_a_a(
 
 
 def srm(bench: Bench, reps: int, seed: int) -> list[dict]:
-    """Sample-ratio-mismatch checks, with two kinds of broken analysis table.
+    """Sample-ratio-mismatch checks, clean and with two kinds of broken analysis table.
 
-    *Random loss*: a share of the treated arm's customers silently missing from the table. It biases
-    nothing, but the arm sizes betray it. *Outcome-dependent loss*: treated customers with a failed
-    verification missing, as if the logging of an error also dropped the customer. That biases the
-    friction estimate and the arm sizes betray that too, which is why the check is run first.
+    Assignment here is by independent fair coin per customer, as a hash of the id gives in
+    production, so the clean table can raise a false alarm (about once in a thousand at the 0.001
+    threshold); a split into exactly equal halves never could. *Random loss*: a share of the treated
+    arm's customers silently missing from the table. It biases nothing, but the arm sizes betray it.
+    *Outcome-dependent loss*: treated customers with a failed verification missing, as if the logging
+    of an error also dropped the customer. That biases the friction estimate and the arm sizes
+    betray that too, which is why the check is run first.
     """
     rng = np.random.default_rng(seed)
     y = bench.arms["device500"].y
@@ -167,7 +170,7 @@ def srm(bench: Bench, reps: int, seed: int) -> list[dict]:
     ):
         flagged, g1 = 0, []
         for _ in range(reps):
-            t = assign(bench.n, rng)
+            t = rng.random(bench.n) < 0.5
             obs = ya + (y - ya) * t[:, None]
             keep = np.ones(bench.n, dtype=bool)
             if drop is None:
@@ -235,6 +238,8 @@ def sequential_summary(run: dict[str, np.ndarray]) -> list[dict]:
         sign_ok = (
             np.sign(eff[np.arange(len(first)), idx]) == np.sign(truth[idx]) if truth.any() else None
         )
+        if sign_ok is not None:
+            sign_ok = sign_ok | (truth[idx] == 0)  # no sign to get wrong in a week of zero effect
         rows.append(
             {
                 "procedure": name,
@@ -268,9 +273,11 @@ def delayed_readout(
     """The weekly effect on fraud loss read three ways, averaged over random assignments.
 
     ``true`` counts every loss when it happens (not knowable by the bank); ``reported`` counts a loss
-    only once its report has arrived; ``weighted`` divides each reported loss by the chance it would
-    have been reported by now. ``weights`` is the (n, weeks) cumulative weighted-loss table of the
-    treated arm followed by that of the control arm, stacked along a new first axis.
+    only once its report has arrived; ``weighted`` divides each reported loss by the share of reports
+    of its type that have arrived by now (delay model only, no report rate). ``weights`` is the
+    (n, weeks) cumulative weighted-loss table of the control arm followed by that of the treated arm,
+    stacked along a new first axis. ``truth`` is the effect on all losses, ``truth_ult`` the effect on
+    the losses that will eventually be reported, which is what the weighted readout estimates.
     """
     rng = np.random.default_rng(seed)
     a, b = bench.arms["baseline"], bench.arms[treatment]
@@ -286,6 +293,7 @@ def delayed_readout(
         for k, lut in luts.items():
             out[k][r] = lut.statistics(t)[0]
     out["truth"] = (b.weekly["loss"] - a.weekly["loss"]).mean(axis=0)
+    out["truth_ult"] = (b.weekly["loss_ultimate"] - a.weekly["loss_ultimate"]).mean(axis=0)
     return out
 
 
@@ -330,7 +338,7 @@ def selection(bench: Bench, treatment: str, metric: str, reps: int, seed: int) -
     det = tercile == 0
     y_det = np.where(det, yb, ya)
     res: dict[str, dict] = {
-        "truth": {"effect": truth},
+        "truth": {"effect": truth, "newest_third_effect": float((yb - ya)[det].mean())},
         "deterministic": {
             "naive": naive(det, y_det),
             "tenure_regression": regression(det, y_det),
@@ -356,15 +364,21 @@ def selection(bench: Bench, treatment: str, metric: str, reps: int, seed: int) -
 
 
 def rate_trap(bench: Bench, treatment: str) -> dict[str, float]:
-    """The failure rate per step-up against the number of customers hurt, baseline against rule."""
-    a, b = bench.arms["baseline"].y, bench.arms[treatment].y
-    stepups = lambda y: float(y[:, 5].sum())  # noqa: E731
-    failed = lambda y: float(y[:, 4].sum())  # noqa: E731
-    return {
-        "failed_per_stepup_baseline": failed(a) / stepups(a),
-        "failed_per_stepup_rule": failed(b) / stepups(b),
-        "customers_hurt_baseline": failed(a),
-        "customers_hurt_rule": failed(b),
-        "stepups_baseline": stepups(a),
-        "stepups_rule": stepups(b),
-    }
+    """Two ratio metrics against the counts behind them, baseline against rule.
+
+    ``failed_per_stepup``: failed verifications per step-up (events over events). A rule that adds
+    step-ups adds failures in proportion, so the rate stays put while the harm grows.
+    ``fraud_per_1000``: approved fraud pesos per MXN 1,000 of approved genuine pesos, a ratio of
+    arm sums; the denominator barely moves, so it tracks the per-customer effect.
+    """
+    a, b = bench.arms["baseline"], bench.arms[treatment]
+    out = {}
+    for tag, arm in (("baseline", a), ("rule", b)):
+        out[f"failed_per_stepup_{tag}"] = float(arm.failed.sum() / arm.y[:, 5].sum())
+        out[f"failed_events_{tag}"] = float(arm.failed.sum())
+        out[f"customers_hurt_{tag}"] = float(arm.y[:, 4].sum())
+        out[f"stepups_{tag}"] = float(arm.y[:, 5].sum())
+        out[f"fraud_per_1000_{tag}"] = float(1000 * arm.y[:, 0].sum() / arm.volume[:, 1].sum())
+    out["fraud_per_1000_effect"] = out["fraud_per_1000_rule"] / out["fraud_per_1000_baseline"] - 1
+    out["per_customer_effect"] = float((b.y[:, 0] - a.y[:, 0]).mean() / a.y[:, 0].mean())
+    return out

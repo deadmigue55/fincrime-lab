@@ -362,7 +362,9 @@ def cmd_experiments_run(args: argparse.Namespace) -> int:
 
 def cmd_experiments_report(args: argparse.Namespace) -> int:
     """Score every criterion of docs/methodology.md section 9 and draw the figures."""
-    from fincrime.experiments import outcomes, report
+    import json
+
+    from fincrime.experiments import labels, outcomes, report
 
     paths = get_paths()
     results = Path(args.results) if args.results else paths.processed / "experiments_results"
@@ -370,8 +372,24 @@ def cmd_experiments_report(args: argparse.Namespace) -> int:
     bench = outcomes.load(paths.processed / "experiments", paths.processed / "bank")
     res = report.analyse(summary, raw, bench)
     report.write(res, Path(args.out))
-    report.figures(res, raw, Path(args.img))
+    rows = [
+        json.loads(x) for x in (results / "labels.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    res["labels"] = labels.summarise(rows)
+    report.write(res, Path(args.out))
+    report.figures(res, raw, Path(args.img), rows)
     print(f"wrote {args.out} and the figures in {args.img}")
+    return 0
+
+
+def cmd_experiments_labels(args: argparse.Namespace) -> int:
+    """Read an experiment through delayed labels in many independent banks."""
+    from fincrime.experiments import labels
+
+    paths = get_paths()
+    out = Path(args.out) if args.out else paths.processed / "experiments_results" / "labels.jsonl"
+    rows = labels.run(out, args.treatment, range(1, args.n + 1), args.customers, args.workers)
+    print(f"{len(rows)} banks in {out}")
     return 0
 
 
@@ -574,6 +592,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--scale", type=float, default=1.0, help="shrink replication counts (smoke run)"
     )
     er.set_defaults(func=cmd_experiments_run)
+    el = exp_sub.add_parser("labels", help="delayed-label readout across independent banks")
+    el.add_argument("-n", type=int, default=60)
+    el.add_argument("--treatment", default="tight_all")
+    el.add_argument("--customers", type=int, default=200_000)
+    el.add_argument("--workers", type=int, default=5)
+    el.add_argument("--out", default=None)
+    el.set_defaults(func=cmd_experiments_labels)
     ep = exp_sub.add_parser("report", help="score the criteria and draw the figures")
     ep.add_argument("--results", default=None, help="folder written by `experiments run`")
     ep.add_argument("--out", default="docs/experiment-results/results.json")

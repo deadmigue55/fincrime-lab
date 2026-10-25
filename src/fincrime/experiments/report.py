@@ -87,7 +87,21 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
         for r in res["v1"]["rows"]
         if not r["inside_band"]
     ]
-    res["v1"]["permutation"] = summary["permutation_aa"]["summary"]
+    perm = summary["permutation_aa"]["summary"]
+    preps = summary["permutation_aa"]["reps"]
+    plo, phi = study.band(preps)
+    res["v1"]["permutation"] = {
+        "reps": preps,
+        "band": [plo, phi],
+        "rows": {
+            m: {
+                **v,
+                "permutation_inside": plo <= v["permutation"] <= phi,
+                "welch_inside": plo <= v["welch"] <= phi,
+            }
+            for m, v in perm.items()
+        },
+    }
 
     # V2: planted effects
     planted = {}
@@ -102,6 +116,16 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
             for r in rows
         ]
     res["v2"] = planted
+    res["v2_criterion"] = (
+        "bias within 3 Monte Carlo standard errors (amendment 6); coverage at least 93%"
+    )
+    res["v2_worst_bias_z"] = max(
+        abs(r["bias"]) / r["bias_mc_se"] for rows in planted.values() for r in rows
+    )
+    res["v2_cells_over_1se"] = sum(
+        abs(r["bias"]) > r["bias_mc_se"] for rows in planted.values() for r in rows
+    )
+    res["v2_cells"] = sum(len(rows) for rows in planted.values())
     res["v2_passed"] = all(
         r["bias_ok"] and r["coverage_ok"] for rows in planted.values() for r in rows
     )
@@ -112,6 +136,24 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
         if not (r["bias_ok"] and r["coverage_ok"])
     ]
 
+    # customers per arm for 80% power at the full window, scaling the observed se with 1/sqrt(n)
+    z = 1.959964 + 0.841621
+    res["sample_size"] = {
+        t: {
+            r["metric"]: {
+                "per_arm_now": bench.n // 2,
+                "per_arm_needed": int(
+                    np.ceil(bench.n / 2 * (z * r["mean_se"] / abs(r["truth"])) ** 2)
+                ),
+            }
+            for r in planted[t]
+            if r["estimator"] == "E1"
+            and r["metric"] in ("loss", "ct_loss", "friction")
+            and r["truth"] != 0
+        }
+        for t in TREATMENTS
+    }
+
     # variance reduction: standard error against E1, per metric (A/A draws)
     se = raw["replicate:aa|se"].mean(axis=0)  # (3, metrics)
     res["variance_reduction"] = {
@@ -121,6 +163,10 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
 
     # V3: SRM
     res["v3"] = summary["srm"]["summary"]
+    by = {r["analysis_table"]: r for r in res["v3"]}
+    # the protocol's criterion: the clean table passes and the 5% random loss is flagged; the
+    # outcome-dependent loss is a finding (how often it is caught), not a pass mark
+    res["v3_passed"] = bool(by["none"]["flagged"] <= 0.02 and by["random 5%"]["flagged"] >= 0.99)
 
     # V4: sequential
     seq: dict = {"looks": outcomes.WEEKS}
@@ -137,12 +183,35 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
     r = seq["loss"]["aa_reps"]
     lo, hi = study.band(r)
     seq["band"] = [lo, hi]
-    seq["passed"] = all(
-        seq[m]["aa"][i]["any_reject"] <= hi
+    non_naive = [
+        (m, row)
         for m in ("loss", "friction")
-        for i, row in enumerate(seq[m]["aa"])
+        for row in seq[m]["aa"]
         if row["procedure"] != "naive"
-    )
+    ]
+    # the harm is inflation, so the pass criterion is one-sided; a procedure below the band is
+    # conservative and costs power, which is reported rather than hidden
+    seq["passed"] = all(row["any_reject"] <= hi for _, row in non_naive)
+    seq["below_band"] = [
+        f"{m} {row['procedure']} {row['any_reject']:.3f}"
+        for m, row in non_naive
+        if row["any_reject"] < lo
+    ]
+    seq["msprt_protocol_tau"] = {}
+    for m in ("loss", "friction"):
+        tau = 0.25 * np.asarray(res["cum_mean"][m])
+        seq["msprt_protocol_tau"][m] = {}
+        for arm in ("aa", *TREATMENTS):
+            eff, se_ = raw[f"sequential:{m}:{arm}|effect"], raw[f"sequential:{m}:{arm}|se"]
+            first = sequential.first_crossing(
+                sequential.msprt_log_lambda(eff, se_, tau) > np.log(1 / 0.05)
+            )
+            seq["msprt_protocol_tau"][m][arm] = {
+                "any_reject": float((first >= 0).mean()),
+                "median_week": float(np.median(first[first >= 0]) + 1)
+                if (first >= 0).any()
+                else None,
+            }
     seq["naive_inflated"] = {
         m: next(row["any_reject"] for row in seq[m]["aa"] if row["procedure"] == "naive")
         for m in ("loss", "friction")
@@ -156,7 +225,9 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
     # V5: delayed labels
     delay = {}
     for t in TREATMENTS:
-        d = {k: raw[f"delay:{t}|{k}"] for k in ("true", "reported", "weighted", "truth")}
+        d = {
+            k: raw[f"delay:{t}|{k}"] for k in ("true", "reported", "weighted", "truth", "truth_ult")
+        }
         delay[t] = {
             "weeks": [4, 8, 13, 25],
             "truth_cum": [float(d["truth"][w - 1]) for w in (4, 8, 13, 25)],
@@ -165,12 +236,20 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
             "weighted": [float(d["weighted"][:, w - 1].mean()) for w in (4, 8, 13, 25)],
             "weighted_sd": [float(d["weighted"][:, w - 1].std()) for w in (4, 8, 13, 25)],
             "reported_sd": [float(d["reported"][:, w - 1].std()) for w in (4, 8, 13, 25)],
-            "rates": summary[f"delay:{t}"]["rates"],
+            "truth_ultimate_cum": [float(d["truth_ult"][w - 1]) for w in (4, 8, 13, 25)],
             "median_days": summary[f"delay:{t}"]["median_days"],
         }
     res["v5"] = delay
 
     # V6: selection and the rate trap
+    res["variants_tried"] = {
+        "estimators": 3,
+        "treatments": 3,
+        "metrics": 6,
+        "sequential_procedures": 4,
+        "msprt_tau_sensitivity": 2,
+        "v6_estimators": 6,
+    }
     res["v6"] = {t: summary[f"selection:{t}:loss"]["summary"] for t in TREATMENTS}
     res["rate_trap"] = {t: summary[f"rate_trap:{t}"]["summary"] for t in TREATMENTS}
     return res
@@ -190,12 +269,12 @@ def write(res: dict, path: Path) -> None:
 # --- figures ------------------------------------------------------------------------------------
 
 
-def figures(res: dict, raw: dict, img: Path) -> None:
+def figures(res: dict, raw: dict, img: Path, label_rows: list[dict]) -> None:
     img.mkdir(parents=True, exist_ok=True)
     _fig_validation(res, img)
     _fig_power(res, raw, img)
     _fig_peeking(res, img)
-    _fig_labels(res, raw, img)
+    _fig_labels(res, label_rows, img)
     _fig_bias(res, img)
 
 
@@ -235,9 +314,11 @@ def _fig_validation(res: dict, img: Path) -> None:
     )
 
     ax = axes[1]
-    pos = 0
+    pos = 0.0
     ticks, labels = [], []
+    short = {"loss": "loss", "friction": "hurt", "stepups": "step-ups"}
     for t in TREATMENTS:
+        start = pos
         for m in ("loss", "friction", "stepups"):
             rows = [r for r in res["v2"][t] if r["metric"] == m]
             for j, r in enumerate(rows):
@@ -245,12 +326,22 @@ def _fig_validation(res: dict, img: Path) -> None:
                     pos + (j - 1) * 0.2, r["coverage"], color=cols[r["estimator"]], s=26, zorder=3
                 )
             ticks.append(pos)
-            labels.append(f"{METRIC_NAME[m]}\n{NICE[t].split()[0]}")
+            labels.append(short[m])
             pos += 1
-        pos += 0.6
+        ax.text(
+            (start + pos - 1) / 2,
+            -0.17,
+            NICE[t],
+            ha="center",
+            va="top",
+            fontsize=8,
+            color=fg.INK2,
+            transform=ax.get_xaxis_transform(),
+        )
+        pos += 0.8
     ax.axhline(0.95, color=fg.INK2, linewidth=1, linestyle="--")
     ax.axhline(0.93, color=fg.MUTED, linewidth=0.8, linestyle=":")
-    ax.set_xticks(ticks, labels, fontsize=6.5, rotation=0)
+    ax.set_xticks(ticks, labels, fontsize=8)
     ax.set_ylim(0.88, 1.0)
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
     ax.set_ylabel("95% intervals that contain the true effect", color=fg.INK2)
@@ -386,35 +477,91 @@ def _fig_peeking(res: dict, img: Path) -> None:
     )
 
 
-def _fig_labels(res: dict, raw: dict, img: Path) -> None:
+def _fig_labels(res: dict, rows: list[dict], img: Path) -> None:
     fig, axes = fg._frame(11.5, 4.8, 2)
     wk = np.arange(1, outcomes.WEEKS + 1)
-    for ax, t in zip(axes, ("velocity3", "tight_all"), strict=True):
-        truth = raw[f"delay:{t}|truth"]
-        ax.plot(
-            wk, truth, color=fg.INK, linewidth=2.5, label="True effect (not knowable by the bank)"
+    est = {k: np.array([r[k] for r in rows]) for k in ("true", "reported", "weighted")}
+    truth = np.array([[r[f"truth_{w}"] for w in wk] for r in rows])
+    ult = np.array([r["truth_ult"] for r in rows])
+    ax = axes[0]
+    ax.plot(wk, truth.mean(axis=0), color=fg.INK, linewidth=2.5, label="True effect on all losses")
+    ax.plot(
+        wk,
+        ult.mean(axis=0),
+        color=fg.INK,
+        linewidth=1.5,
+        linestyle="--",
+        label="...on losses that will be reported",
+    )
+    for key, col, lab in (
+        ("reported", fg.ORANGE, "Reported claims only"),
+        ("weighted", fg.BLUE, "Reported, scaled by the delay model"),
+    ):
+        ax.plot(wk, np.median(est[key], axis=0), color=col, linewidth=2, label=lab)
+        ax.fill_between(
+            wk,
+            np.percentile(est[key], 10, axis=0),
+            np.percentile(est[key], 90, axis=0),
+            color=col,
+            alpha=0.13,
+            linewidth=0,
         )
-        for key, col, lab in (
-            ("reported", fg.ORANGE, "Reported claims only"),
-            ("weighted", fg.BLUE, "Reported, scaled by the delay model"),
-        ):
-            arr = raw[f"delay:{t}|{key}"]
-            m, sd = arr.mean(axis=0), arr.std(axis=0)
-            ax.plot(wk, m, color=col, linewidth=2, label=lab)
-            ax.fill_between(wk, m - 1.96 * sd, m + 1.96 * sd, color=col, alpha=0.12, linewidth=0)
-        ax.axhline(0, color=fg.MUTED, linewidth=0.8)
-        ax.axvline(17, color=fg.MUTED, linewidth=0.8, linestyle=":")
-        ax.set_xlabel("Weeks of the test", color=fg.INK2)
-        ax.set_ylabel("Effect on fraud loss so far (pesos per customer)", color=fg.INK2)
-        ax.set_title(NICE[t], loc="left", fontsize=10, color=fg.INK2)
-    axes[0].legend(frameon=False, fontsize=8, loc="lower left")
+    ax.axhline(0, color=fg.MUTED, linewidth=0.8)
+    ax.axvline(17, color=fg.MUTED, linewidth=0.8, linestyle=":")
+    ax.set_xlabel("Weeks of the test", color=fg.INK2)
+    ax.set_ylabel("Effect on fraud loss so far (pesos per customer)", color=fg.INK2)
+    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    ax.set_title(
+        f"All four rules tightened, {len(rows)} independent banks (median, 10th to 90th)",
+        loc="left",
+        fontsize=10,
+        color=fg.INK2,
+    )
+
+    ax = axes[1]
+    for key, col, lab in (
+        ("reported", fg.ORANGE, "Reported claims only"),
+        ("weighted", fg.BLUE, "Reported, scaled by the delay model"),
+    ):
+        target = ult if key == "weighted" else truth
+        tm = target.mean(axis=0)
+        err = est[key] - target
+        ax.plot(
+            wk,
+            100 * err.mean(axis=0) / abs(tm),
+            color=col,
+            linewidth=2,
+            linestyle="-",
+            label=f"{lab}: bias",
+        )
+        ax.plot(
+            wk,
+            100 * np.sqrt((err**2).mean(axis=0)) / abs(tm),
+            color=col,
+            linewidth=1.3,
+            linestyle="--",
+            label=f"{lab}: typical error",
+        )
+    ax.axhline(0, color=fg.MUTED, linewidth=0.8)
+    ax.axvline(17, color=fg.MUTED, linewidth=0.8, linestyle=":")
+    ax.set_ylim(-50, 150)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(100, decimals=0))
+    ax.set_xlabel("Weeks of the test", color=fg.INK2)
+    ax.set_ylabel("Error as a share of the effect it estimates", color=fg.INK2)
+    ax.legend(frameon=False, fontsize=7, loc="upper right")
+    ax.set_title(
+        "Reported-only is biased towards zero; scaled is noisy early",
+        loc="left",
+        fontsize=10,
+        color=fg.INK2,
+    )
     fg._finish(
         fig,
         img / "exp_labels.png",
         "Fraud labels arrive late, so an early readout understates the rule",
-        "Dotted line: 120 days, when 95% of reports have arrived (steps 6 and 7). Bands: 95% of random splits.",
+        "Dotted line: 120 days, when 95% of reports have arrived (steps 6 and 7). Each bank is a different seed; the contrast is over every customer.",
         left=0.07,
-        wspace=0.22,
+        wspace=0.24,
     )
 
 
@@ -432,10 +579,14 @@ def _fig_bias(res: dict, img: Path) -> None:
         ("Randomised", s["randomised"]["mean"], fg.BLUE),
     ]
     ax.bar(range(len(items)), [v for _, v, _ in items], color=[c for _, _, c in items])
-    ax.axhline(truth, color=fg.INK, linewidth=1.5, linestyle="--")
-    ax.text(
-        len(items) - 0.5, truth, "true effect", ha="right", va="bottom", fontsize=8, color=fg.INK
+    sub = s["truth"]["newest_third_effect"]
+    ax.axhline(
+        truth, color=fg.INK, linewidth=1.5, linestyle="--", label="True effect, all customers"
     )
+    ax.axhline(
+        sub, color=fg.INK2, linewidth=1.2, linestyle=":", label="True effect, newest third only"
+    )
+    ax.legend(frameon=False, fontsize=8, loc="lower right")
     ax.set_xticks(range(len(items)), [lab for lab, _, _ in items], fontsize=7)
     ax.set_ylabel("Estimated effect on fraud loss (pesos per customer)", color=fg.INK2)
     ax.set_title(

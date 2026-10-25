@@ -58,7 +58,7 @@ Each step is one or more commits, pushed in blocks.
 | 5 | **Done.** Fraud features in SQL (velocity, windows, device sharing; no geo, the simulator has none) | 27.2M-row feature store, point-in-time by event time and knowledge time, oracle + truncation + leak-guard tests ([fraud-features.md](fraud-features.md)) |
 | 6 | **Done.** Fraud models, rules, thresholds, fairness, drift | Protocol fixed first; 4 candidates; recall at fixed budgets with account-level intervals on 9.1M test attempts; BAF check; ablation ([fraud-models.md](fraud-models.md)) |
 | 7 | **Done.** Chargeback maturation and fraud loss model | delay model, IBNR backtest and 200-bank calibration, frequency-severity capital with intervals ([fraud-loss.md](fraud-loss.md)) |
-| 8 | Experiment lab | planted effects recovered within CIs, false-positive rate of A/A tests at 5% |
+| 8 | **Done.** Experiment lab | two-bank construction gives the true effect; A/A false-positive rate 4.0% to 5.0%, coverage 94% to 97%, peeking 28% vs 3% to 5% with alpha-spending, late-label bias 36% to 78% removed by weighting; V1 (one cell) and V3 (outcome-dependent loss) fell short and are reported ([experiment-lab.md](experiment-lab.md)) |
 | 9 | AML module | typology coverage table and workload curve |
 | 10 | Governance pack | model cards, validation report |
 | 11 | Dashboard, Quarto report, portfolio card, release 1.0.0 | live URL, tagged release |

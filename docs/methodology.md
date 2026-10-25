@@ -384,6 +384,60 @@ Recorded in the order they happened, each with what had been seen.
    start, so the CUPED covariate for fraud metrics was zero for everyone. Found by printing column sums
    before any analysis; the extraction now begins on 1 July 2024.
 
+3. *The deterministic rollout in V6 cannot be inverse-probability weighted.* Section 9 asked for a naive,
+   a tenure-adjusted and an inverse-probability estimate of a rollout to the newest third of
+   customers; with every new customer treated and every old one not, the propensity is 0 or 1 and the
+   weighted estimator is undefined. Added before looking at any V6 number: a second, tilted rollout
+   (0.8, 0.5 and 0.2 probability of treatment for the newest, middle and oldest third), where
+   stratification and inverse-probability weighting are defined.
+4. *The ratio metric of V6 is failures per step-up, not fraud per approved peso.* The arm totals had
+   been printed (step-ups and failures per arm) when the choice was made. Fraud pesos per approved
+   peso moves with the numerator almost exactly, so it shows nothing; the failure rate per
+   step-up stays at 2.9% while the number of customers who failed rises 2.4 times, which is the
+   trap worth showing.
+5. *V5 is repeated across 60 independent banks.* The first V5 result (one bank, 500 random splits)
+   showed the scaled readout off by 30% to 60% at 13 weeks, which random splits cannot explain: in
+   one bank the report delays and the never-reported share are fixed draws. The question "how far off
+   is a readout, typically" needs many banks. Fraud needs only the attack half of the simulator, so 60
+   banks (seeds 1 to 60) were built under the baseline and under `tight_all`, each with its own delay
+   model fitted on its own 2024 claims, and the contrast taken over every customer. Seeds were fixed
+   by their number, not chosen. The single-bank readout is kept in the results.
+
+6. *The V2 bias criterion is three Monte Carlo standard errors, not one.* Found by an independent
+   read-only review of the code, not by the results. Section 9 said "within one"; with 54 cells a
+   one-standard-error rule fails about a third of them by chance, so it could not have been meant
+   literally. The rule applied is |bias| at most 3 standard errors in every cell (the worst cell and the
+   number over one standard error are reported); coverage at least 93% is unchanged.
+7. *The V4 criterion is one-sided, and the always-valid test's mixing sd is a schedule fixed from
+   history.* The harm of peeking is inflation, so a procedure passes if its A/A rate of any rejection
+   does not exceed the band; one below the band is conservative, costs power and is listed, not
+   hidden. Section 9 set the mixing sd of the mSPRT at "25% of the control mean"; that mean is a
+   quantity of the running experiment, which breaks the test's validity if used, so the code takes
+   25% of the *pre-period* mean grown in proportion to elapsed time. The protocol's version (25% of
+   the control's cumulative mean at the look, treated as known in advance) is reported next to it as a
+   sensitivity. Review also showed the loss mSPRT never rejected under the pre-period schedule.
+8. *The delayed-label weighting has no report rate.* The first version divided each reported loss by
+   the completion factor and by an estimated share of claims ever reported, taken from claims more
+   than 120 days old. A bank cannot see the claims that are never reported, so that share was the
+   simulator's own and flattered the readout. The weights are now one over the delay model's
+   completion factor only, fitted on claims reported before 2025, and the readout targets the losses
+   that will eventually be reported; the gap to all losses is the never-reported share, which
+   step 7 treats as a named assumption. Every V5 number was recomputed.
+9. *Other changes after the review.* V3 assigns by independent fair coin, as a hash of the customer
+   id does, so a clean table can raise a false alarm (before, exact halves could not); V3 now has an
+   explicit pass condition. V6 also reports the effect among the newest third alone, and computes the
+   fraud-per-1,000-pesos ratio of section 9 next to the failures-per-step-up one (now counted in events
+   per step-up, both of them). The permutation A/A is run 2,000 times with 499 shuffles instead of 500
+   times with 999. A zero-effect week no longer counts as a wrong-sign stop.
+10. *V3 pass mark, set after the first run and before this write-up.* The protocol asked that a table
+   missing customers be flagged; with independent assignment the study found that 5% missing is
+   flagged every time (1.000), 1% missing 15% of the time and 0.2% missing 0.2% of the time, and that
+   a table missing the treated customers who failed verification is flagged in 83.9% of runs while
+   its friction estimate comes out with the wrong sign (-0.0126 against a true +0.0064). The pass
+   mark is therefore: clean table flagged at most 2% of the time and 5% random loss flagged at least
+   99%. The outcome-dependent loss, which is the dangerous case, is reported as a detection rate and
+   not as a pass: a sample ratio check is not a guarantee against it.
+
 ## 6. Decision log
 
 | Date | Decision | Why |

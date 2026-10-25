@@ -31,9 +31,9 @@ def _bench(effect=-0.3, seed=0, N=N) -> outcomes.Bench:
         week = rng.integers(0, W, (N, 1))
         ramp = (np.arange(W)[None, :] >= week).astype(float)
         weekly = {"loss": loss[:, None] * ramp, "friction": fric[:, None] * ramp}
-        weekly["loss_reported"] = weekly["loss"]
+        weekly["loss_reported"] = weekly["loss_ultimate"] = weekly["loss"]
         weekly["stepups"] = step[:, None] * ramp
-        return outcomes.Arm("x", y, pl.DataFrame(), weekly, np.zeros((N, 2)))
+        return outcomes.Arm("x", y, pl.DataFrame(), weekly, np.ones((N, 2)), (fric > 0) * 1.0)
 
     pre = np.column_stack(
         [rng.poisson(0.2, N) * 100.0, rng.poisson(0.01, N) * 1.0]
