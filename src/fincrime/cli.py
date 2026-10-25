@@ -348,6 +348,33 @@ def cmd_experiments_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_experiments_run(args: argparse.Namespace) -> int:
+    """Run every validation study of docs/methodology.md section 9 and keep the raw draws."""
+    from fincrime.experiments import runner
+
+    paths = get_paths()
+    root = paths.processed / "experiments"
+    out = Path(args.out) if args.out else paths.processed / "experiments_results"
+    runner.run(root, paths.processed / "bank", out, args.workers, args.scale)
+    print(f"raw draws and summaries in {out}")
+    return 0
+
+
+def cmd_experiments_report(args: argparse.Namespace) -> int:
+    """Score every criterion of docs/methodology.md section 9 and draw the figures."""
+    from fincrime.experiments import outcomes, report
+
+    paths = get_paths()
+    results = Path(args.results) if args.results else paths.processed / "experiments_results"
+    summary, raw = report.load(results)
+    bench = outcomes.load(paths.processed / "experiments", paths.processed / "bank")
+    res = report.analyse(summary, raw, bench)
+    report.write(res, Path(args.out))
+    report.figures(res, raw, Path(args.img))
+    print(f"wrote {args.out} and the figures in {args.img}")
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -540,6 +567,18 @@ def build_parser() -> argparse.ArgumentParser:
     eb.add_argument("--out", default=None)
     eb.add_argument("--force", action="store_true")
     eb.set_defaults(func=cmd_experiments_build)
+    er = exp_sub.add_parser("run", help="run the validation studies (about 15 minutes)")
+    er.add_argument("--out", default=None)
+    er.add_argument("--workers", type=int, default=6)
+    er.add_argument(
+        "--scale", type=float, default=1.0, help="shrink replication counts (smoke run)"
+    )
+    er.set_defaults(func=cmd_experiments_run)
+    ep = exp_sub.add_parser("report", help="score the criteria and draw the figures")
+    ep.add_argument("--results", default=None, help="folder written by `experiments run`")
+    ep.add_argument("--out", default="docs/experiment-results/results.json")
+    ep.add_argument("--img", default="docs/img")
+    ep.set_defaults(func=cmd_experiments_report)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)

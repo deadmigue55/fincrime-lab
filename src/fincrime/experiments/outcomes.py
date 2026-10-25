@@ -9,13 +9,15 @@ thousands of random assignments can be scored with a few matrix products.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 
 from fincrime.experiments import worlds
+from fincrime.risk import claims as cl
+from fincrime.risk import delay
 
 METRICS = ("loss", "claims", "ato_loss", "ct_loss", "friction", "stepups")
 LABELS = {
@@ -188,3 +190,47 @@ def load(root: Path, bank_dir: Path, treatments: list[str] | None = None) -> Ben
     names = treatments or list(worlds.TREATMENTS)
     arms = {"baseline": base} | {t: load_arm(root / t, ids) for t in names}
     return Bench(ids=ids, x=x, pre=pre, tenure=tenure, arms=arms)
+
+
+def completion_inputs(bank_dir: Path, as_of: date) -> tuple[dict, dict]:
+    """Delay model and report rate per fraud type, fitted on claims reported before ``as_of``.
+
+    Both come from the step 7 code and from history only (the bank as it stood before the
+    experiment), so using them in a readout during the experiment is legitimate.
+    """
+    claims = cl.load_claims(bank_dir)
+    fits = delay.fit_by_type(claims, as_of)
+    cut = datetime(as_of.year, as_of.month, as_of.day) - timedelta(days=120)
+    rates = {}
+    for k in cl.TYPES:
+        old = claims.filter((pl.col("fraud_type") == k) & (pl.col("loss_ts") < cut))
+        rates[k] = cl.visible(old, as_of).height / old.height if old.height else 1.0
+    return fits, rates
+
+
+def weighted_weekly(arm: Arm, fits: dict, rates: dict, n: int) -> np.ndarray:
+    """Cumulative reported loss, each claim scaled up by the chance it would be reported by now.
+
+    A claim that happened ``a`` days before a look and has been reported counts ``1 / (F(a) r)``
+    times its amount, where ``F`` is the delay distribution of its fraud type and ``r`` the share of
+    claims that are ever reported. Unreported claims count zero, so on average the weighted figure is
+    the true loss. Weights grow quickly for the newest claims, which is the price of reading early.
+    """
+    first = arm.fraud.group_by("episode_id").agg(pl.col("ts").min().alias("first_ts"))
+    ev = arm.fraud.join(first, on="episode_id").filter(pl.col("reported_ts").is_not_null())
+    row = ev["i"].to_numpy()
+    amount = ev["amount"].to_numpy()
+    first_ts = ev["first_ts"].to_numpy()
+    reported = ev["reported_ts"].to_numpy()
+    kind = ev["fraud_type"].to_numpy()
+    out = np.zeros((n, WEEKS))
+    for k, end in enumerate(week_ends()):
+        e = np.datetime64(end)
+        ok = (reported <= e) & (row >= 0)
+        age = (e - first_ts[ok]) / np.timedelta64(1, "D")
+        c = np.ones(ok.sum())
+        for t in cl.TYPES:
+            s = kind[ok] == t
+            c[s] = fits[t].cdf(age[s]) * rates[t]
+        np.add.at(out[:, k], row[ok], amount[ok] / np.maximum(c, 1e-3))
+    return out

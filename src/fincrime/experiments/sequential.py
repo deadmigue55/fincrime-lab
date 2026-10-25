@@ -94,22 +94,27 @@ def first_crossing(rejects: np.ndarray) -> np.ndarray:
     return np.where(any_, rejects.argmax(axis=1), -1)
 
 
-def look_statistics(cum: np.ndarray, t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Effect and standard error at every look, for a table of cumulative outcomes.
+class LookTable:
+    """Cumulative outcomes of both worlds at every look, with their squares precomputed.
 
-    ``cum`` has one row per customer and one column per look (outcome accumulated up to that look)
-    and ``t`` is the 0/1 assignment. The same Welch estimate as E1, for all looks at once.
+    ``control`` and ``treated`` have one row per customer and one column per look. In a real
+    experiment a customer shows only one of them; here, an assignment picks which, so thousands of
+    assignments cost four matrix-vector products each.
     """
-    t = t.astype(float)
-    n1, n0 = t.sum(), (1 - t).sum()
-    s1 = t @ cum
-    s0 = cum.sum(axis=0) - s1
-    q1 = t @ (cum * cum)
-    q0 = (cum * cum).sum(axis=0) - q1
-    m1, m0 = s1 / n1, s0 / n0
-    v1 = (q1 - n1 * m1**2) / (n1 - 1)
-    v0 = (q0 - n0 * m0**2) / (n0 - 1)
-    return m1 - m0, np.sqrt(v1 / n1 + v0 / n0)
+
+    def __init__(self, control: np.ndarray, treated: np.ndarray | None = None) -> None:
+        self.c1, self.c0 = (control if treated is None else treated), control
+        self.q1, self.q0 = self.c1 * self.c1, self.c0 * self.c0
+
+    def statistics(self, t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Effect and Welch standard error at every look for assignment ``t`` (1 = treated)."""
+        t = t.astype(float)
+        u = 1.0 - t
+        n1, n0 = t.sum(), u.sum()
+        m1, m0 = (t @ self.c1) / n1, (u @ self.c0) / n0
+        v1 = ((t @ self.q1) - n1 * m1**2) / (n1 - 1)
+        v0 = ((u @ self.q0) - n0 * m0**2) / (n0 - 1)
+        return m1 - m0, np.sqrt(v1 / n1 + v0 / n0)
 
 
 def decisions(
