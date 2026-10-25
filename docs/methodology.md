@@ -144,6 +144,101 @@ and feature PSI by month against the training block, and recall at the fixed thr
 **External check.** The same pipeline is run on BAF (train months 0-5, test months 6-7, the dataset's
 own protocol) and reported next to the synthetic result; when they disagree both are shown.
 
+## 8. Step 7 protocol: chargeback maturation and fraud loss (fixed before any model was fitted, 2026-10-25)
+
+Written after looking only at counts: claims per month, the planted report-delay parameters in
+`assumptions.md`, the shape of the exposure and the size quantiles of lost amounts. No estimate of
+a completion factor, a frequency or a capital figure had been computed.
+
+**What a claim is.** A *claim* is a fraud episode (`crime_class = fraud`) with at least one approved
+outgoing loss: 1,102 of the 1,286 fraud episodes (the rest were blocked and lost nothing). Its
+*loss date* is the timestamp of the first approved loss event and its *amount* is the episode's
+`lost_amount`. The bank only learns that a loss was fraud when the victim reports it, so at an
+as-of date D the bank *sees* the claims with `reported_ts <= D`; it has no record of the others,
+neither the ones still to be reported nor the ones that never will be. The simulator keeps every
+report, including those after the end of the data (the last is February 2026), so the **ultimate
+of every cohort is known** and every estimate below can be scored against it. At a real bank that
+check is impossible; here it is the whole point.
+
+**Two targets, kept apart.** (1) *Reported ultimate*: claims that will ever be reported. Reporting
+lag (IBNR in the claims sense) is identifiable from the reports alone and is what the methods below
+estimate. (2) *True loss*: also the claims never reported (planted: 8% of takeovers, 20% of
+card-testing episodes). The never-reported share cannot be learnt from reports; it enters only as a
+named gross-up, shown at the planted value and at half and double.
+
+**Cohorts and the triangle.** Cohort = calendar month of the loss; development lag = months between
+the loss month and the report month, so cohort *m* has lags 0 to (D month - m) at a month-end D.
+Counts and pesos, pooled and by fraud type (takeover reports in days, card testing in weeks, so
+pooling lets the mix change the pattern).
+
+**Methods (four, and the number is reported with the result).**
+
+| Id | Method | Interval |
+|---|---|---|
+| M1 | Chain ladder on the pooled triangle, volume-weighted factors | Mack standard error; over-dispersed Poisson bootstrap (1,000 replicates) |
+| M2 | Chain ladder by fraud type, summed | over-dispersed Poisson bootstrap by type |
+| M3 | Bornhuetter-Ferguson by type: prior ultimate = exposure x the claim rate of the last six cohorts that are complete under M2 | point estimate only |
+| M4 | Reporting-delay model: lognormal delay per type, fitted to the reported claims by right-truncated maximum likelihood; ultimate = reported / completion factor of the cohort | parametric bootstrap (1,000 replicates): parameter draws, then Poisson process error |
+
+The chain-ladder tail is fixed in advance: an exponential-decay fit to the last three development
+factors above 1, extrapolated to 24 lags, and 1.0 when fewer than three exceed 1. It is not tuned.
+Pesos in M4 assume the delay is independent of the amount; that is tested (rank correlation of
+amount and delay by type) and reported, not assumed.
+
+**As-of dates and the choice of method.** Month-ends. *Selection block*: 2024-06-30 to 2024-12-31
+(7 dates). *Confirmation block*: 2025-01-31 to 2025-06-30 (6 dates), read once, after the choice.
+Cohorts from April 2024 on take part (earlier months have fewer than 15 claims). Criterion on the
+selection block, fixed now: lowest mean absolute relative error of the total IBNR in pesos; a tie
+within 1 point goes to the simpler method (M1 < M2 < M4 < M3). Also reported for every method:
+bias of total IBNR in counts and pesos, the cohort-level absolute error, the width of the 95%
+interval and its coverage of the true IBNR. As-of dates overlap, so coverage over them is not
+independent: it is repeated across independent simulated banks (below) where it is.
+
+**Completion factors and label maturity.** The chosen method yields a completion factor by fraud
+type and lag in days. Two uses: immature months in the step 6 figures are completed with it instead
+of being read as "no fraud", and it is checked against the 120-day purge gap that step 6 fixed
+(the share of eventual reports arrived by day 120).
+
+**Frequency.** Ultimate (completed) claim counts per month and type, divided by exposure = open
+genuine accounts in the month. Negative binomial with mean exposure x rate; a log-linear time
+trend is kept only if a likelihood-ratio test gives p < 0.01. Only cohorts that are at least 95%
+complete under the chosen method enter the fit; the newer ones are shown, not fitted.
+
+**Severity.** Lost amount per claim, by type. Two candidates: a lognormal; a lognormal body with a
+generalised Pareto tail above the type's 90th percentile. Chosen by log-likelihood on the claims of
+2025-01 to 2025-06 after fitting on 2024-01 to 2024-12 (the simulator's full report file supplies
+their amounts). No inflation of amounts.
+
+**Aggregate loss, capital and cover.** Claims of the two types are independent; counts and
+amounts are independent (checked: correlation of monthly count and mean size). The distribution of
+the next-12-months aggregate (July 2025 to June 2026) is built by the fast Fourier transform of the
+compound distribution on a MXN 50 grid with a mean-preserving split of each amount between its two
+neighbouring grid points; checked against Monte Carlo in the tests. Exposure scenarios: onboarding
+continues at the mean of the last six months (base), no new accounts, onboarding 50% higher.
+Reported: expected loss; 99.5% value at risk; capital = VaR(99.5%) - expected loss; tail value at
+risk at 99%; the net expected recovery of an aggregate stop-loss at 120%, 150% and 200% of the
+expected loss. Intervals (95%) come from 1,000 replicates that redraw the IBNR, refit the
+frequency, resample the claims for severity and recompute the aggregate. The gross-up for unreported
+claims is shown separately and is not part of the base figure.
+
+**Validation on planted truth (the part that makes it checkable).**
+
+1. *Known answer*: the textbook Taylor and Ashe triangle reproduces its published chain-ladder
+   reserve and Mack standard error.
+2. *Parameter recovery*: the fitted delay medians and spreads against the planted values (2 and 30
+   days, 0.8), and the report rates against 92% and 80%.
+3. *Out of time on this world*: the IBNR estimates above against the ultimates the file holds.
+4. *Across independent worlds*: 200 banks of 200,000 customers (seeds 1 to 200, built attacks-only,
+   which reproduces the main world exactly for seed 2026). In each, at the as-of date 2024-12-31:
+   the 95% interval for the total IBNR in pesos and the 90% predictive interval for the aggregate
+   loss of January to June 2025 are scored against what that world produced. Coverage should be
+   near nominal; if it is not, that is the finding.
+
+**Limits stated now.** One bank, 18 months, 1,102 claims: the 99.5% capital figure rests on the
+fitted tail, not on observed 1-in-200 years, and is reported as a model output with its interval.
+Fraud arrives from the simulator's constant attack mix, so there is no regime change to forecast;
+adaptive attackers are step 8.
+
 ## 6. Decision log
 
 | Date | Decision | Why |
@@ -157,3 +252,5 @@ own protocol) and reported next to the synthetic result; when they disagree both
 | 2026-10-22 | Fraud prevalence is a named assumption with sensitivity, not calibrated | CONDUSEF counts claims and there is no denominator |
 | 2026-10-25 | Step 6 protocol fixed before fitting: 120-day purge, four candidates, test touched once, cost units named | Methodology rule: no bending the protocol to the results |
 | 2026-10-25 | Amendment before the full run: L2 = 1 on all boosting candidates, not only the largest | A smoke run on one month (no validation result used) showed the unregularised Newton step explode with weighted rare positives (margins in the millions, train AUC 0.49); L2 = 1 gives margins within 20 |
+| 2026-10-25 | Step 7 protocol fixed before fitting: claim definition, four IBNR methods, selection block then a confirmation block, FFT aggregate, 200-world calibration | Methodology rule: no bending the protocol to the results; the simulator keeps every report, so ultimates are checkable |
+| 2026-10-25 | Reported-ultimate and true-loss kept as separate targets; never-reported share is a named gross-up | Reports cannot reveal what is never reported; pretending otherwise would hide the largest uncertainty |
