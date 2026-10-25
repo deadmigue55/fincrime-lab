@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 5 of 11 done**: the synthetic bank, four public benchmarks, the data platform and
-> a point-in-time fraud feature store are built and tested; the final 180-million-row benchmark
-> run is pending. Next: fraud models, rules and fairness (step 6).
+> Status: **step 6 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
+> point-in-time feature store and the fraud models are built and tested; the final 180-million-row
+> benchmark run is pending. Next: chargeback maturation and the fraud loss model (step 7).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -20,7 +20,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 |---|---|---|
 | `bank` | A simulated Mexican neobank with planted fraud and laundering, calibrated to public data | done |
 | `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | built, final benchmark pending |
-| `fraud` | Point-in-time features (done), time-based validation, delayed labels, fixed false-positive budgets, cost-optimal thresholds, fairness, drift | features done, models next |
+| `fraud` | Point-in-time features, time-based validation, delayed labels, fixed review budgets, cost-optimal thresholds, fairness, drift, BAF check | done |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | planned |
 | `aml` | Rules vs graph analytics, typology coverage, alert workload | planned |
 | `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses, model cards | planned |
@@ -149,6 +149,28 @@ matches every feature, a truncation test (delete the future and nothing moves) a
 At full scale the planted behaviours show up as they should: account takeovers use a new device
 48.5% of the time against 1.8% for everything else, card-testing bursts average 3.9 attempts in
 10 minutes against 0.01. Details in [docs/fraud-features.md](docs/fraud-features.md).
+
+## Fraud models (step 6)
+
+Rules against a model at the same review workload, on 9.1 million held-out attempts, under a
+protocol written before any model was fitted (120-day purge for label delay, four candidates, test
+block touched once, intervals by account).
+
+![Recall at a fixed review budget](docs/img/fraud_recall.png)
+
+- At the incumbent rules' own workload (0.54% of attempts reviewed) the model finds **99.3%** of
+  fraud events (95% interval 99.0 to 99.6) against **40.4%** for the rules. In **pesos** the gap is
+  smaller and more honest: **97.1% against 90.2%**, because the rules already catch the big
+  takeovers and miss mostly tiny card-testing charges.
+- Under stated cost assumptions (MXN 15 per review, MXN 40 per genuine customer disturbed) the model
+  at a review budget chosen on validation costs MXN 0.84M over the test quarter against 3.19M for
+  the rules; at double the unit costs the rules cost more than doing nothing.
+- Velocity features carry the result (recall falls from 99.5% to 82.6% without them), then novelty.
+- **A result that is too good is a finding about the simulator.** The same pipeline on the public
+  BAF benchmark finds 55% of fraud at a 5% false-positive rate, and reproduces its age disparity
+  (applicants 50 and over flagged 11.4% of the time against 3.8%). Both are reported.
+
+Full write-up, ablation, fairness and drift: [docs/fraud-models.md](docs/fraud-models.md).
 
 ## Data
 

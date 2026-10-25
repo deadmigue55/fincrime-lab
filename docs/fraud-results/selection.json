@@ -1,0 +1,48 @@
+{
+  "candidates": [
+    "logistic",
+    "gbm_d3",
+    "gbm_d6",
+    "gbm_d6_big"
+  ],
+  "variants_tried": 4,
+  "selection_train": {
+    "rows": 94929,
+    "observed_fraud": 710,
+    "weighted_rows": 4711660
+  },
+  "validation": {
+    "logistic": {
+      "recall_at_0.5%": 0.9601181683899557,
+      "ap": 0.9006403646059638,
+      "auc": 0.9899800330556663
+    },
+    "gbm_d3": {
+      "recall_at_0.5%": 0.9948301329394387,
+      "ap": 0.9697500574106607,
+      "auc": 0.9990673960416869
+    },
+    "gbm_d6": {
+      "recall_at_0.5%": 0.9948301329394387,
+      "ap": 0.8632271750540426,
+      "auc": 0.9976736068991672
+    },
+    "gbm_d6_big": {
+      "recall_at_0.5%": 0.9940915805022157,
+      "ap": 0.863431806669851,
+      "auc": 0.9982348623232983
+    }
+  },
+  "chosen": "gbm_d3",
+  "validation_positives": 1354,
+  "validation_rows": 4340758,
+  "final_train_obs": {
+    "rows": 186399,
+    "fraud": 1417
+  },
+  "final_train_true": {
+    "rows": 187937,
+    "fraud": 2917
+  },
+  "seconds": 164
+}
