@@ -369,6 +369,21 @@ the window; attackers adapt within an episode (section 2) but do not learn acros
 the interference an adapting fraud ring would create is not tested; the guardrail of friction is
 the simulator's, and a real customer's tolerance is not.
 
+### Amendments to section 9
+
+Recorded in the order they happened, each with what had been seen.
+
+1. *The population is all 200,000 genuine customers, not those onboarded before 1 January.* Section
+   9 estimated 190,000 eligible customers without counting; the count was 117,894, because a third of
+   the bank opens its account after the experiment starts. Assignment by customer (a hash of the id, as
+   in production) puts those who join later in an arm before they arrive, and the new rules reach
+   them. What had been seen: the column totals of each arm's outcomes (for example total pesos lost in
+   the window), no estimate, interval or test. The estimators, metrics, treatments and criteria are
+   unchanged; tenure at the start is negative for later arrivals.
+2. *The pre-period fraud table was empty at first.* The baseline extraction began at the experiment
+   start, so the CUPED covariate for fraud metrics was zero for everyone. Found by printing column sums
+   before any analysis; the extraction now begins on 1 July 2024.
+
 ## 6. Decision log
 
 | Date | Decision | Why |

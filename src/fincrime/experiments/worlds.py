@@ -82,7 +82,7 @@ def extract(bank_dir: Path) -> dict[str, pl.DataFrame]:
         LEFT JOIN (SELECT episode_id, min(reported_ts) AS reported_ts FROM {rep}
                    GROUP BY episode_id) r USING (episode_id)
         WHERE a.is_fraud AND a.crime_class = 'fraud' AND a.status = 'approved'
-              AND a.direction = 'out' AND a.ts >= {start}
+              AND a.direction = 'out' AND a.ts >= TIMESTAMP '{PRE_START} 00:00:00'
         ORDER BY a.ts
         """
     ).pl()
@@ -143,10 +143,15 @@ def extract_baseline(bank_dir: Path, out: Path) -> Path:
 
 
 def customers_table(bank_dir: Path) -> pl.DataFrame:
-    """The eligible population: genuine customers onboarded before the experiment starts."""
+    """The experiment's population: every genuine customer, those who join later included.
+
+    Assignment is by customer, fixed before the start, as a hash of the customer id would be in
+    production, so a customer who opens an account in March is already in an arm. Tenure at the
+    start is negative for them (days until they arrive).
+    """
     c = pl.read_parquet(bank_dir / "customers.parquet")
     return (
-        c.filter(pl.col("fraud_role").is_null() & (pl.col("onboarded_on") < START))
+        c.filter(pl.col("fraud_role").is_null())
         .select("customer_id", "onboarded_on", "state", "income_band", "n_devices")
         .with_columns(
             tenure_days=(pl.lit(START) - pl.col("onboarded_on")).dt.total_days().cast(pl.Float64)
