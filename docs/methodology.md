@@ -235,7 +235,7 @@ claims is shown separately and is not part of the base figure.
    near nominal; if it is not, that is the finding.
 
 **Amendments made after fitting began.** The protocol above was committed before any estimate
-existed (60468aa). Five things changed while the work ran, each for a reason found in the data, and
+existed (60468aa). Seven things changed while the work ran, each for a reason found in the data, and
 each is listed here so the result is read as what it is: a protocol with these amendments, not a
 protocol that was followed to the letter.
 
@@ -262,6 +262,19 @@ protocol that was followed to the letter.
 5. *Losses cut off at the end of the data.* An episode that starts in the last day can have an event
    dropped by the end of the window (one of 24 worlds had one). The claim carries the sum of the
    events the bank has; a gap anywhere else still raises an error.
+
+6. *An independent review* of the code (a separate agent reading it cold) found three departures,
+   all fixed before the final run of the 200 worlds. The predictive interval of M4 drew the
+   unreported count as a Poisson around its estimate and so left out the estimation error of the
+   cohort's size (about 1.7 times too narrow for the newest card-testing month); it now draws the
+   mean from a gamma first. The Bornhuetter-Ferguson prior took its "complete" cohorts from chain
+   ladder, which has none for card testing (amendment 1), and silently fell back on the three oldest
+   months; it now takes the last six cohorts the delay model calls at least 95% complete. The
+   out-of-time check on the main bank had chosen its severity model on the same claims it then
+   forecast; it now re-chooses on 2024 alone (fit before July, test July to December).
+7. *The trend rule cannot act.* Section 8 keeps a log-linear trend in the claim rate only if its
+   test gives p < 0.01. The test is run and reported (no trend was found in the main bank), but the
+   forecast code has no trend branch; a bank where it triggered would need one.
 
 **What was seen before the choice.** The first development run printed the selection and the
 confirmation blocks together, so the confirmation block was not read once and in order as
