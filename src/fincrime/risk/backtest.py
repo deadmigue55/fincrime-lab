@@ -31,7 +31,9 @@ SELECTION = [
     date(2024, m, d) for m, d in ((6, 30), (7, 31), (8, 31), (9, 30), (10, 31), (11, 30), (12, 31))
 ]
 CONFIRMATION = [date(2025, m, d) for m, d in ((1, 31), (2, 28), (3, 31), (4, 30), (5, 31), (6, 30))]
-COMPLETE = 1.02  # a cohort counts as complete for the BF prior when its CDF is at most this
+COMPLETE = (
+    0.95  # a cohort counts as complete for the BF prior when the delay model says at least this
+)
 PRIOR_COHORTS = 6
 
 
@@ -104,22 +106,33 @@ def estimate(
         sum_draws("amount"),
     )
 
-    # M3: Bornhuetter-Ferguson with a prior from the claim rate of the last complete cohorts (M2)
+    # M3: Bornhuetter-Ferguson. The prior is the claim rate of the last six cohorts that the delay
+    # model calls at least 95% complete: chain ladder cannot say which cohorts are complete when its
+    # tail factor is above 1 even for the oldest (amendment 6 in docs/methodology.md).
+    mat, _ = delay.maturity(claims, as_of)
     expo = exposure.sort("month")["accounts"].to_numpy()[:n]
     bf_n, bf_a = np.zeros(n), np.zeros(n)
     for k in TYPES:
-        for value, acc in (("count", bf_n), ("amount", bf_a)):
+        j = mat.types.index(k) if k in mat.types else None
+        for value, acc, ult in (
+            ("count", bf_n, mat.ultimate_n),
+            ("amount", bf_a, mat.ultimate_amt),
+        ):
             cl = by_type[k][value][0]
-            done = np.flatnonzero(cl.cdf <= COMPLETE)[-PRIOR_COHORTS:]
+            done = (
+                np.flatnonzero(mat.completion[:, j] >= COMPLETE)[-PRIOR_COHORTS:]
+                if j is not None
+                else []
+            )
             if len(done) < 3:
                 done = np.arange(min(3, n))  # young book: fall back on the three oldest cohorts
-            rate = cl.ultimate[done].sum() / expo[done].sum()
+            base = ult[:, j] if j is not None else cl.ultimate
+            rate = base[done].sum() / expo[done].sum()
             bf = triangle.bornhuetter_ferguson(cl.latest, cl.cdf, rate * expo)
             acc += bf - cl.latest
     out["M3"] = Estimate(bf_n, bf_a, None, None)
 
     pred = delay.predictive(claims, as_of, reps=max(reps, 1), seed=seed + 7) if reps else None
-    mat, _ = delay.maturity(claims, as_of)
     d_n = pred["counts"].sum(axis=2) if pred else None
     d_a = pred["amounts"].sum(axis=2) if pred else None
     out["M4"] = Estimate(mat.ibnr_n.sum(axis=1), mat.ibnr_amt.sum(axis=1), d_n, d_a)

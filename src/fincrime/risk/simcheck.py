@@ -100,6 +100,7 @@ def one_world(args: tuple[int, int, int, int]) -> dict:
     realised = pipeline.realised_loss(claims, *WINDOW)
     pred = f["predictive"]
     iv = pipeline.intervals(f["reps"])["expected_loss"]
+    out["trend_p"] = f["trend_p"]
     out["loss"] = {
         "realised": realised,
         "point": f["point"]["expected_loss"],

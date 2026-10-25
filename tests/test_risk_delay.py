@@ -109,3 +109,15 @@ def test_true_ibnr_counts_what_is_reported_only_after_the_as_of_date():
     assert jan["n"].tolist() == [1.0] and jan["amt"].tolist() == [50.0]
     mar = backtest.true_ibnr(claims, date(2024, 3, 31))
     assert mar["n"].tolist() == [0.0, 1.0, 0.0] and mar["ult_n"].tolist() == [2.0, 1.0, 0.0]
+
+
+def test_the_newest_cohort_interval_carries_the_estimation_error_of_its_size():
+    """With a completion of about a third, the unreported count is far more spread than a Poisson."""
+    claims = _world(n=3000, seed=6, days=330)
+    pred = delay.predictive(claims, date(2024, 11, 30), reps=800, seed=2)
+    last = pred["counts"][:, -1, 0]
+    c = pred["maturity"].completion[-1, 0]
+    assert c < 0.5
+    assert (
+        last.var() > 1.8 * last.mean()
+    )  # Poisson would give a ratio of 1; the gamma mixing gives about 1 / c

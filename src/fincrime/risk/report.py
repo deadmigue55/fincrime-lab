@@ -14,7 +14,7 @@ Order of work (each block uses only what the protocol allows it to):
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import matplotlib
@@ -249,6 +249,21 @@ def _finite(x: float) -> float | None:
     return float(x) if np.isfinite(x) else None
 
 
+def _choose_kind(ever: pl.DataFrame, split: datetime, stop: datetime | None = None) -> str:
+    """The declared rule on one split: fit before ``split``, best total held-out log-likelihood after it."""
+    train = ever.filter(pl.col("loss_ts") < split)
+    test = ever.filter(pl.col("loss_ts") >= split)
+    if stop is not None:
+        test = test.filter(pl.col("loss_ts") < stop)
+    totals = dict.fromkeys(("lognormal", "splice", "splice_nonneg"), 0.0)
+    for k in cl.TYPES:
+        a = train.filter(pl.col("fraud_type") == k)["amount"].to_numpy()
+        b = test.filter(pl.col("fraud_type") == k)["amount"].to_numpy()
+        for kind in totals:
+            totals[kind] += len(b) * lossmodel.heldout_loglik(lossmodel.fit_severity(a, kind), b)
+    return max(totals, key=lambda x: totals[x])
+
+
 def _severity_block(claims: pl.DataFrame) -> tuple[dict, dict, str]:
     ever = claims.filter(pl.col("reported_ts").is_not_null())
     train = ever.filter(pl.col("loss_ts") < pl.datetime(2025, 1, 1))
@@ -360,7 +375,16 @@ def _loss_block(
 
 
 def _out_of_time(claims: pl.DataFrame, expo: pl.DataFrame, kind: str, seed: int) -> dict:
-    """Fit at 2024-12-31, forecast January to June 2025, compare with what this bank then lost."""
+    """Fit at 2024-12-31, forecast January to June 2025, compare with what this bank then lost.
+
+    The severity model is re-chosen here on 2024 claims alone (fit before July, test July to
+    December), so that no claim of the forecast window has any part in the check.
+    """
+    kind = _choose_kind(
+        claims.filter(pl.col("reported_ts").is_not_null()),
+        datetime(2024, 7, 1),
+        datetime(2025, 1, 1),
+    )
     months = expo.sort("month")
     future = months.filter(pl.col("month") >= simcheck.WINDOW[0])["accounts"].to_numpy()
     f = pipeline.forecast(
@@ -381,6 +405,7 @@ def _out_of_time(claims: pl.DataFrame, expo: pl.DataFrame, kind: str, seed: int)
         "predicted": f["point"]["expected_loss"],
         "interval90": [pred.var(0.05), pred.var(0.95)],
         "pit": pred.prob_at_most(realised),
+        "severity_kind": kind,
         "relative_error": f["point"]["expected_loss"] / realised - 1,
     }
 

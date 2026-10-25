@@ -203,7 +203,8 @@ def predictive(
 
     Per replicate: draw the delay parameters from their asymptotic normal distribution (parameter
     error), recompute the completion, draw the number of still-unreported claims of each cohort as
-    Poisson with mean ``reported (1 - F) / F`` (process error), and give each the amount of a claim
+    Poisson whose mean is itself gamma distributed with mean ``reported (1 - F) / F`` (process error
+    plus the estimation error of the cohort's size), and give each the amount of a claim
     drawn at random from the reported ones of its type (amount independent of delay: tested in
     :func:`amount_delay_correlation`). Returns ``counts`` and ``amounts`` of shape (reps, cohorts, types).
     """
@@ -226,7 +227,10 @@ def predictive(
                 if mat.reported_n[i, j] == 0:
                     continue
                 c = cohort_completion(mu, sigma, as_of, m, grid=20)
-                lam = mat.reported_n[i, j] * (1.0 - c) / max(c, 1e-6)
+                # unreported ~ Poisson(lam), lam ~ Gamma(reported, (1-c)/c): the gamma carries the
+                # estimation error of the cohort's size (a plain Poisson would drop it, and the
+                # newest cohorts, where c is small, would get intervals about 1.7 times too narrow)
+                lam = rng.gamma(mat.reported_n[i, j], (1.0 - c) / max(c, 1e-6))
                 kk = rng.poisson(lam)
                 counts[r, i, j] = kk
                 if kk:

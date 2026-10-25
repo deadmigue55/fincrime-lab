@@ -112,7 +112,13 @@ def forecast(
         "point": lossmodel.summary(dist),
         "completed": done,
         "reps": [],
+        # section 8 keeps a trend only if p < 0.01; none is modelled, so the test is reported with every forecast
+        "trend_p": {
+            k: lossmodel.trend_test(done.point[done.mask[:, j], j], e[done.mask[:, j]])[1]
+            for j, k in enumerate(TYPES)
+        },
     }
+    reps_n = max(reps, 1)
     pmf_sum = np.zeros(cells) if keep_pmf else None
     for _ in range(reps):
         fit = _fit(
@@ -127,7 +133,7 @@ def forecast(
         if keep_pmf:
             pmf_sum += d.pmf
     if keep_pmf:
-        out["predictive"] = lossmodel.Aggregate(pmf_sum / reps)
+        out["predictive"] = lossmodel.Aggregate(pmf_sum / reps_n)
     return out
 
 

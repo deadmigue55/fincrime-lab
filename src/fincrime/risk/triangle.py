@@ -189,7 +189,7 @@ def mack(cum: np.ndarray) -> tuple[np.ndarray, float]:
     mse = np.zeros(n)
     for i in range(1, n):
         for k in range(n - 1 - i, n - 1):
-            mse[i] += sigma2[k] / f[k] ** 2 * (1.0 / full[i, k] + 1.0 / col_sum[k])
+            mse[i] += sigma2[k] / f[k] ** 2 * (1.0 / max(full[i, k], 1e-9) + 1.0 / col_sum[k])
     mse *= ult**2
     total = mse.sum()
     for i in range(1, n):
