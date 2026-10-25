@@ -15,7 +15,7 @@ Numbers below come from `docs/experiment-results/results.json`, which the `repor
 - **Two checks fell short and are reported as such**: V1 (A/A false-positive rate for takeover
   loss is 4.0%, just under the 4.1% lower edge of the band; it is conservative, not inflated) and
   the detection of an outcome-dependent sample loss (V3, 83.9%).
-- **The headline is a negative one.** For fraud loss, no rule is detected at 80% power in 26 weeks
+- **The headline is a negative one.** For fraud loss, no rule is detected at 80% power in 25 weekly looks
   with 100,000 customers per arm. The guardrail (friction) is decided in one to three weeks.
 
 ## 1. Design: the truth comes from two banks
@@ -34,7 +34,7 @@ any estimator, and the truth to score it against.
 | `device500` | new-device step-up from 3,000 to 500 | -1.75 (-11.8%) | customers failing +50%, step-ups +50% |
 | `tight_all` | the two above, plus young-counterparty at 500 and night at 1,000 | -5.34 (-36.0%) | customers failing +143%, step-ups +146% |
 
-Baseline mean fraud loss is 14.86 pesos per customer over the 26 weeks (2025-01-01 to 2025-06-30),
+Baseline mean fraud loss is 14.86 pesos per customer over the 26 calendar weeks (2025-01-01 to 2025-06-30; 25 whole weeks are read),
 and it is heavy-tailed: 0.33% of customers have a claim.
 
 Unit: the customer, all 200,000 genuine customers (amendment 1; the first estimate of 190,000
@@ -82,7 +82,7 @@ everywhere, above the 93% floor.
 
 ![Power](img/exp_power.png)
 
-At the full 26 weeks with 100,000 customers per arm, power for a 5% test on fraud loss is
+At the last look (week 25) with 100,000 customers per arm, power for a 5% test on fraud loss is
 **32% for `velocity3`, 8.7% for `device500` and 46% for `tight_all`**. A rule that cuts loss by a
 third is missed more often than caught. Three reasons stack: 99.7% of customers have no claim, the
 amounts are heavy-tailed, and the loss of a rule that bites hard on card testing is dominated by a
@@ -96,7 +96,7 @@ few large episodes.
 
 Reading it: the same experiment that cannot see the benefit sees the cost within the first week.
 A team that stops when the guardrail moves has no evidence about the benefit; a team that waits for
-the benefit needs about 3.5 times the customers it has. The minimum detectable effect after 26
+the benefit needs about 3.5 times the customers it has. The minimum detectable effect after 25
 weeks is 62% of the control mean for fraud loss and 11% for customers failing. Aiming at card-testing
 loss alone (the part `velocity3` actually moves) brings the needed sample down 5-fold.
 

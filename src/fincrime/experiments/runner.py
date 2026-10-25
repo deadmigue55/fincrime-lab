@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import time
 from concurrent.futures import ProcessPoolExecutor
-from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -19,7 +18,7 @@ from fincrime.experiments import outcomes, study, worlds
 
 SEED = 2026
 TREATMENTS = tuple(worlds.TREATMENTS)
-AS_OF = date(2024, 12, 31)
+AS_OF = outcomes.AS_OF
 
 
 def _bench(root: str, bank: str) -> outcomes.Bench:
@@ -62,7 +61,7 @@ def task(args: tuple) -> tuple[str, dict]:
             "se": run["se"],
             "truth": run["truth"],
             "tau": run["tau"],
-            "first_" + "naive": run["first"]["naive"],
+            "first_naive": run["first"]["naive"],
             "first_obf": run["first"]["obf"],
             "first_pocock": run["first"]["pocock"],
             "first_msprt": run["first"]["msprt"],

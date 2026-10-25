@@ -208,6 +208,25 @@ def completion_fits(bank_dir: Path, as_of: date) -> dict:
     return delay.fit_by_type(cl.load_claims(bank_dir), as_of)
 
 
+AS_OF = date(
+    2024, 12, 31
+)  # the bank as it stood before the experiment: delay models use claims to here
+
+
+def completion(fits: dict, kind: np.ndarray, age: np.ndarray) -> np.ndarray:
+    """Share of reports of each fraud type that has arrived ``age`` days after the first loss.
+
+    Floored at 1e-3 so a very new claim cannot get an unbounded weight. Shared by the single-bank
+    readout here and the many-bank study in ``labels``, so both start the clock the same way.
+    """
+    c = np.ones(len(age))
+    for t in cl.TYPES:
+        s = kind == t
+        if t in fits and s.any():
+            c[s] = fits[t].cdf(age[s])
+    return np.maximum(c, 1e-3)
+
+
 def weighted_weekly(arm: Arm, fits: dict, n: int) -> np.ndarray:
     """Cumulative reported loss, each claim scaled up by the chance it would be reported by now.
 
@@ -230,9 +249,6 @@ def weighted_weekly(arm: Arm, fits: dict, n: int) -> np.ndarray:
         e = np.datetime64(end)
         ok = (reported <= e) & (row >= 0)
         age = (e - first_ts[ok]) / np.timedelta64(1, "D")
-        c = np.ones(ok.sum())
-        for t in cl.TYPES:
-            s = kind[ok] == t
-            c[s] = fits[t].cdf(age[s])
-        np.add.at(out[:, k], row[ok], amount[ok] / np.maximum(c, 1e-3))
+        c = completion(fits, kind[ok], age)
+        np.add.at(out[:, k], row[ok], amount[ok] / c)
     return out

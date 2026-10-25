@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import json
 from concurrent.futures import ProcessPoolExecutor
-from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -33,28 +32,23 @@ from fincrime.risk import claims as cl
 from fincrime.risk import delay
 
 LOOK_WEEKS = tuple(range(1, outcomes.WEEKS + 1))
-AS_OF = date(2024, 12, 31)
+AS_OF = outcomes.AS_OF
 
 
 def _events(at, policy_name: str) -> pl.DataFrame:
     """Approved outgoing fraud events from the start of the experiment, with their report date."""
     reps = at.reports.group_by("episode_id").agg(pl.col("reported_ts").min())
-    first = (
-        at.attempts.filter(
-            pl.col("is_fraud") & (pl.col("status") == "approved") & (pl.col("direction") == "out")
-        )
-        .group_by("episode_id")
-        .agg(pl.col("ts").min().alias("first_ts"))
+    events = at.attempts.filter(
+        pl.col("is_fraud")
+        & (pl.col("crime_class") == "fraud")
+        & (pl.col("status") == "approved")
+        & (pl.col("direction") == "out")
+        & (pl.col("ts") >= outcomes.T0)
     )
+    # the delay clock starts at the first event inside the experiment, as in outcomes.weighted_weekly
+    first = events.group_by("episode_id").agg(pl.col("ts").min().alias("first_ts"))
     return (
-        at.attempts.filter(
-            pl.col("is_fraud")
-            & (pl.col("crime_class") == "fraud")
-            & (pl.col("status") == "approved")
-            & (pl.col("direction") == "out")
-            & (pl.col("ts") >= outcomes.T0)
-        )
-        .join(reps, on="episode_id", how="left")
+        events.join(reps, on="episode_id", how="left")
         .join(first, on="episode_id")
         .select("ts", "amount", "fraud_type", "reported_ts", "first_ts")
         .with_columns(arm=pl.lit(policy_name))
@@ -77,7 +71,13 @@ def readout_one(args: tuple[int, str, int]) -> dict:
         if name == "baseline":
             base_claims = cl.build_claims(at.attempts, at.episodes, at.reports)
     fits = delay.fit_by_type(base_claims, AS_OF)
-    out = {"seed": seed, "treatment": treatment, "n": n, "weeks": list(LOOK_WEEKS)}
+    out = {
+        "seed": seed,
+        "treatment": treatment,
+        "customers": customers,
+        "n": n,
+        "weeks": list(LOOK_WEEKS),
+    }
     for label in ("true", "reported", "weighted"):
         out[label] = []
     for wk in LOOK_WEEKS:
@@ -89,16 +89,12 @@ def readout_one(args: tuple[int, str, int]) -> dict:
             kind = ev["fraud_type"].to_numpy()
             seen = (~np.isnat(rep)) & (rep <= end)
             age = (end - first[seen]) / np.timedelta64(1, "D")
-            c = np.ones(seen.sum())
-            for t in cl.TYPES:
-                s = kind[seen] == t
-                if t in fits and s.any():
-                    c[s] = fits[t].cdf(age[s])
+            c = outcomes.completion(fits, kind[seen], age)
             tot[name] = {
                 "true": amt[ts <= end].sum(),
                 "ultimate": amt[(ts <= end) & ~np.isnat(rep)].sum(),
                 "reported": amt[seen].sum(),
-                "weighted": (amt[seen] / np.maximum(c, 1e-3)).sum(),
+                "weighted": (amt[seen] / c).sum(),
             }
         truth = (tot[treatment]["true"] - tot["baseline"]["true"]) / n
         out["truth_" + str(wk)] = float(truth)
@@ -121,8 +117,12 @@ def run(
     done: dict[int, dict] = {}
     if out.exists():
         for line in out.read_text(encoding="utf-8").splitlines():
-            row = json.loads(line)
-            done[row["seed"]] = row
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:  # a run killed mid-write leaves a cut-off last line
+                continue
+            if row["treatment"] == treatment and row["customers"] == customers:
+                done[row["seed"]] = row
     todo = [(s, treatment, customers) for s in seeds if s not in done]
     out.parent.mkdir(parents=True, exist_ok=True)
     with ProcessPoolExecutor(max_workers=workers) as pool, out.open("a", encoding="utf-8") as fh:

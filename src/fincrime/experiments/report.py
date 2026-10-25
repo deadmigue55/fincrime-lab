@@ -244,9 +244,9 @@ def analyse(summary: dict, raw: dict, bench: outcomes.Bench) -> dict:
     # V6: selection and the rate trap
     res["variants_tried"] = {
         "estimators": 3,
-        "treatments": 3,
-        "metrics": 6,
-        "sequential_procedures": 4,
+        "treatments": len(TREATMENTS),
+        "metrics": len(outcomes.METRICS),
+        "sequential_procedures": len(seq["loss"]["aa"]),
         "msprt_tau_sensitivity": 2,
         "v6_estimators": 6,
     }

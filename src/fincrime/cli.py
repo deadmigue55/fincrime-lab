@@ -371,10 +371,11 @@ def cmd_experiments_report(args: argparse.Namespace) -> int:
     summary, raw = report.load(results)
     bench = outcomes.load(paths.processed / "experiments", paths.processed / "bank")
     res = report.analyse(summary, raw, bench)
-    report.write(res, Path(args.out))
-    rows = [
-        json.loads(x) for x in (results / "labels.jsonl").read_text(encoding="utf-8").splitlines()
-    ]
+    labels_file = results / "labels.jsonl"
+    if not labels_file.exists():
+        print(f"{labels_file} is missing: run `fincrime experiments labels` first")
+        return 1
+    rows = [json.loads(x) for x in labels_file.read_text(encoding="utf-8").splitlines()]
     res["labels"] = labels.summarise(rows)
     report.write(res, Path(args.out))
     report.figures(res, raw, Path(args.img), rows)
