@@ -300,6 +300,32 @@ def cmd_fraud_ablation(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_risk_worlds(args: argparse.Namespace) -> int:
+    """Run the calibration across independent simulated banks (docs/methodology.md section 8)."""
+    from fincrime.risk import simcheck
+
+    paths = get_paths()
+    out = Path(args.out) if args.out else paths.processed / "risk_results" / "worlds.jsonl"
+    done = simcheck.run(
+        out, range(1, args.n + 1), args.customers, args.reps_ibnr, args.reps_loss, args.workers
+    )
+    print(f"{len(done)} worlds in {out}")
+    return 0
+
+
+def cmd_risk_report(args: argparse.Namespace) -> int:
+    """Run the step 7 protocol on the main bank, write results.json and draw the figures."""
+    from fincrime.risk import report
+
+    paths = get_paths()
+    worlds = paths.processed / "risk_results" / "worlds.jsonl"
+    res, plot = report.analyse(paths.processed / "bank", worlds, reps=args.reps)
+    report.write(res, Path(args.results))
+    report.figures(res, plot, Path(args.img))
+    print(f"wrote {args.results} and the figures in {args.img}")
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -467,6 +493,24 @@ def build_parser() -> argparse.ArgumentParser:
     bf = fraud_sub.add_parser("baf", help="the same pipeline on the BAF benchmark")
     bf.add_argument("--results", default=None, help="folder for baf_results.json")
     bf.set_defaults(func=cmd_fraud_baf)
+
+    risk = sub.add_parser("risk", help="chargeback maturation (IBNR) and the fraud loss model")
+    risk_sub = risk.add_subparsers(dest="action", required=True)
+    rw = risk_sub.add_parser("worlds", help="calibration across independent simulated banks")
+    rw.add_argument("-n", type=int, default=200, help="number of banks (seeds 1 to n)")
+    rw.add_argument("--customers", type=int, default=200_000)
+    rw.add_argument("--reps-ibnr", type=int, default=200)
+    rw.add_argument("--reps-loss", type=int, default=100)
+    rw.add_argument("--workers", type=int, default=5)
+    rw.add_argument("--out", default=None, help="JSON lines file (resumable)")
+    rw.set_defaults(func=cmd_risk_worlds)
+    rr = risk_sub.add_parser(
+        "report", help="run the protocol on the main bank; results and figures"
+    )
+    rr.add_argument("--reps", type=int, default=1000)
+    rr.add_argument("--results", default="docs/risk-results/results.json")
+    rr.add_argument("--img", default="docs/img")
+    rr.set_defaults(func=cmd_risk_report)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)
