@@ -62,7 +62,7 @@ def test_odp_bootstrap_is_centred_on_chain_ladder_with_a_plausible_spread():
     c = _cum()
     incr = np.where(np.isnan(c), np.nan, np.diff(c, axis=1, prepend=0.0))
     reserve = tri.chain_ladder(c, tail=1.0).ibnr.sum()
-    draws = tri.odp_bootstrap(incr, reps=1500, seed=3, tail=1.0)
+    draws = tri.odp_bootstrap(incr, reps=1500, seed=3, tail=1.0).sum(axis=1)
     assert np.mean(draws) == pytest.approx(reserve, rel=0.06)
     # England and Verrall (2002) give a prediction error near 2.9 million for it (recalled, not re-checked)
     assert 1.8e6 < np.std(draws) < 3.8e6
@@ -106,14 +106,21 @@ def test_triangle_cells_and_the_as_of_cut_by_hand():
                 d(2024, 4, 2),
             ),  # reported after the as-of: unseen
             (5, "ato", d(2024, 2, 8), 7.0, None),  # never reported: unseen
+            (
+                6,
+                "ato",
+                d(2024, 1, 12),
+                5.0,
+                d(2024, 1, 22),
+            ),  # same cell as claim 1: counts must add
         ]
     )
     t = tri.build_triangle(claims, date(2024, 3, 31), "count")
     assert t.n == 3
-    expect = np.array([[1, 1, 0], [0, 1, np.nan], [0, np.nan, np.nan]])
+    expect = np.array([[2, 1, 0], [0, 1, np.nan], [0, np.nan, np.nan]])
     assert np.array_equal(t.incr, expect, equal_nan=True)
     pesos = tri.build_triangle(claims, date(2024, 3, 31), "amount", fraud_type="ato")
-    assert pesos.incr[0, 0] == 100.0 and pesos.incr[0, 1] == 50.0 and pesos.incr[1, 0] == 0.0
+    assert pesos.incr[0, 0] == 105.0 and pesos.incr[0, 1] == 50.0 and pesos.incr[1, 0] == 0.0
     with pytest.raises(ValueError):
         tri.build_triangle(claims, date(2024, 3, 30))
 

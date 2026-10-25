@@ -55,6 +55,7 @@ select = [
 "src/fincrime/ingest/report.py" = ["E501"]  # report prose
 "src/fincrime/lake/*.py" = ["E501"]  # SQL strings and chart text
 "src/fincrime/fraud/*.py" = ["E501"]  # SQL strings and feature descriptions
+"src/fincrime/risk/*.py" = ["E501"]  # prose docstrings and method names
 "src/fincrime/cli.py" = ["E501"]  # help text and status lines
 
 # ── Tests ──

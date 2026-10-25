@@ -90,8 +90,8 @@ def build_triangle(
             (month_index(pl.col("loss_ts")) - base).alias("i"),
             (month_index(pl.col("reported_ts")) - month_index(pl.col("loss_ts"))).alias("j"),
         )
-        weight = pl.lit(1.0) if value == "count" else pl.col("amount")
-        cells = df.group_by("i", "j").agg(weight.sum().alias("v"))
+        weight = pl.len().cast(pl.Float64) if value == "count" else pl.col("amount").sum()
+        cells = df.group_by("i", "j").agg(weight.alias("v"))
         for i, j, v in cells.iter_rows():
             if i >= 0:
                 incr[i, j] += v
@@ -219,7 +219,7 @@ def odp_bootstrap(
     seed: int = 0,
     tail: float | None = None,
 ) -> np.ndarray:
-    """Predictive distribution of the total IBNR: ``reps`` draws (England and Verrall, 1999/2002).
+    """Predictive draws of the IBNR by cohort, shape (reps, cohorts) (England and Verrall, 1999/2002).
 
     Steps per replicate: resample the scaled Pearson residuals of the chain-ladder fit, rebuild a
     pseudo triangle, refit the factors (parameter error), project the future cells and draw each
@@ -244,8 +244,8 @@ def odp_bootstrap(
     adj = resid * np.sqrt(n_cells / max(n_cells - n_par, 1))
     pool = adj[pos]  # cells fitted at zero carry no information about spread
     if pool.size == 0:
-        return np.zeros(reps)
-    draws = np.empty(reps)
+        return np.zeros((reps, n))
+    draws = np.empty((reps, n))
     for r in range(reps):
         star = np.zeros_like(incr)
         star[obs] = np.where(
@@ -261,7 +261,7 @@ def odp_bootstrap(
         shape = np.where(mean > 0, mean / phi, 1.0)
         sim = np.where(mean > 0, rng.gamma(shape, phi), 0.0)
         ult_last = np.array([cstar[i, n - 1 - i] for i in range(n)]) + sim.sum(axis=1)
-        draws[r] = sim.sum() + ((tail - 1.0) * ult_last).sum()
+        draws[r] = sim.sum(axis=1) + (tail - 1.0) * ult_last
     return draws
 
 
