@@ -249,6 +249,20 @@ def cmd_fraud_features(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fraud_evaluate(args: argparse.Namespace) -> int:
+    """Fit and score the fraud models under the fixed protocol (docs/methodology.md section 7)."""
+    from fincrime.fraud import evaluate
+
+    paths = get_paths()
+    store = paths.processed / "features" / "fraud_events"
+    out = Path(args.out) if args.out else paths.processed / "fraud_results"
+    summary = evaluate.run(store, paths.lake, out)
+    print(
+        f"chosen {summary['chosen']} of {summary['variants_tried']} candidates, {summary['seconds']} s"
+    )
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -403,6 +417,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--memory-limit-gb", type=int, default=None, help="DuckDB cap (spills to disk)"
     )
     feat.set_defaults(func=cmd_fraud_features)
+    ev = fraud_sub.add_parser("evaluate", help="fit and score the models under the fixed protocol")
+    ev.add_argument("--out", default=None, help="folder (default: data/processed/fraud_results)")
+    ev.set_defaults(func=cmd_fraud_evaluate)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)

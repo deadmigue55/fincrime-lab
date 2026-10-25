@@ -78,7 +78,7 @@ def frame(
                on r.event_id = f.event_id
         where {" and ".join(where)}
     """
-    return con.execute(sql).pl()
+    return con.sql(sql).pl()
 
 
 def design(df: pl.DataFrame, vocab: dict[str, list[str]] | None = None):

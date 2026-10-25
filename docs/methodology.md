@@ -117,8 +117,8 @@ training date; blocked attempts have no observed outcome and are left out of tra
 and a 2% sample of the other events are kept, with weight 50 on the sampled ones.
 
 **Candidates (four, and the number is reported with the result):** logistic regression on log-scaled
-features; gradient boosting with depth 3 and 200 rounds; depth 6 and 200 rounds; depth 6, 400
-rounds and L2 = 1. Selection rule: highest recall at a 0.5% flag share on validation; ties go to the
+features; gradient boosting with depth 3 and 200 rounds; depth 6 and 200 rounds; depth 6 and 400
+rounds. All boosting candidates use L2 = 1 (see the amendment in the decision log). Selection rule: highest recall at a 0.5% flag share on validation; ties go to the
 simpler model. Nothing is tuned on the test block.
 
 **Baseline.** The incumbent rule policy, as an operating point: its own flag rate and recall on the
@@ -156,3 +156,4 @@ own protocol) and reported next to the synthetic result; when they disagree both
 | 2026-10-22 | All attack randomness drawn before the policy decides; event ids derived from episode ids | Same seed under two policies must give the same world, for clean A/B tests |
 | 2026-10-22 | Fraud prevalence is a named assumption with sensitivity, not calibrated | CONDUSEF counts claims and there is no denominator |
 | 2026-10-25 | Step 6 protocol fixed before fitting: 120-day purge, four candidates, test touched once, cost units named | Methodology rule: no bending the protocol to the results |
+| 2026-10-25 | Amendment before the full run: L2 = 1 on all boosting candidates, not only the largest | A smoke run on one month (no validation result used) showed the unregularised Newton step explode with weighted rare positives (margins in the millions, train AUC 0.49); L2 = 1 gives margins within 20 |
