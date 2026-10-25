@@ -234,6 +234,40 @@ claims is shown separately and is not part of the base figure.
    loss of January to June 2025 are scored against what that world produced. Coverage should be
    near nominal; if it is not, that is the finding.
 
+**Amendments made after fitting began.** The protocol above was committed before any estimate
+existed (60468aa). Five things changed while the work ran, each for a reason found in the data, and
+each is listed here so the result is read as what it is: a protocol with these amendments, not a
+protocol that was followed to the letter.
+
+1. *The development-factor tail.* The fixed exponential-decay tail gives card testing a tail factor
+   of 1.12 at the end of the data, so no card-testing month ever counts as 95% complete under
+   chain ladder (the delay model says the oldest are 99.9% complete). Because of that, the months
+   that enter the frequency fit are screened with the delay model's completion (M4), whatever method
+   the backtest picks for IBNR totals. The tail rule itself is unchanged and its weakness is
+   reported in the backtest.
+2. *A fifth variant, M4s.* After the selection block had been read, M4 with the pesos of unreported
+   claims computed as expected count times mean claim size was added to see whether the lumpy
+   reported pesos explained M4's error in pesos. It did not. It cannot be chosen, and the number of
+   variants tried is five, not four.
+3. *A third severity candidate.* The unconstrained generalised Pareto tail came out with a negative
+   shape (a largest possible loss) for both fraud types, and a later claim exceeded that maximum, so
+   its held-out likelihood is minus infinity. The candidate "splice with the shape held at 0 or above"
+   was added. The selection criterion, held-out log-likelihood, is the declared one and was not
+   changed; the lognormal it replaces had a model mean of 941 pesos for card testing against 1,688
+   in the data it was fitted on and 2,654 in the claims it was tested on.
+4. *The bootstrap of the frequency.* The first version of the replicates redrew only the unreported
+   claims, so the sampling error of the claim rate was missing and its interval collapsed to a point.
+   The replicates now redraw the monthly counts from the fitted negative binomial (a parametric
+   bootstrap), which is the standard way to carry that error.
+5. *Losses cut off at the end of the data.* An episode that starts in the last day can have an event
+   dropped by the end of the window (one of 24 worlds had one). The claim carries the sum of the
+   events the bank has; a gap anywhere else still raises an error.
+
+**What was seen before the choice.** The first development run printed the selection and the
+confirmation blocks together, so the confirmation block was not read once and in order as
+specified. The rule picks the same method either way; the 200-world study below, in which each
+world is a fresh draw, is the check that does not depend on this.
+
 **Limits stated now.** One bank, 18 months, 1,102 claims: the 99.5% capital figure rests on the
 fitted tail, not on observed 1-in-200 years, and is reported as a model output with its interval.
 Fraud arrives from the simulator's constant attack mix, so there is no regime change to forecast;
@@ -254,3 +288,4 @@ adaptive attackers are step 8.
 | 2026-10-25 | Amendment before the full run: L2 = 1 on all boosting candidates, not only the largest | A smoke run on one month (no validation result used) showed the unregularised Newton step explode with weighted rare positives (margins in the millions, train AUC 0.49); L2 = 1 gives margins within 20 |
 | 2026-10-25 | Step 7 protocol fixed before fitting: claim definition, four IBNR methods, selection block then a confirmation block, FFT aggregate, 200-world calibration | Methodology rule: no bending the protocol to the results; the simulator keeps every report, so ultimates are checkable |
 | 2026-10-25 | Reported-ultimate and true-loss kept as separate targets; never-reported share is a named gross-up | Reports cannot reveal what is never reported; pretending otherwise would hide the largest uncertainty |
+| 2026-10-25 | Step 7 amendments after fitting began: frequency months screened by the delay model, a fifth IBNR variant (M4s), a third severity candidate (splice with shape at least 0), a parametric bootstrap for the frequency, an end-of-data guard | Each was forced by something visible in the data (a 12% card-testing tail, a lognormal mean half the data's, an interval that collapsed to a point); all are listed under section 8 |
