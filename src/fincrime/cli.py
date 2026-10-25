@@ -326,6 +326,28 @@ def cmd_risk_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_experiments_build(args: argparse.Namespace) -> int:
+    """Build the counterfactual banks (one per rule change) and keep their outcome tables."""
+    import time
+
+    from fincrime.experiments import worlds
+
+    paths = get_paths().ensure()
+    out = Path(args.out) if args.out else paths.processed / "experiments"
+    out.mkdir(parents=True, exist_ok=True)
+    if not (out / "baseline" / "fraud.parquet").exists():
+        worlds.extract_baseline(paths.processed / "bank", out)
+        print("baseline tables written")
+    for name, policy in worlds.TREATMENTS.items():
+        if (out / name / "fraud.parquet").exists() and not args.force:
+            print(f"{name}: already built")
+            continue
+        t0 = time.time()
+        worlds.build_and_extract(name, policy, out)
+        print(f"{name}: built in {time.time() - t0:.0f}s")
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -511,6 +533,13 @@ def build_parser() -> argparse.ArgumentParser:
     rr.add_argument("--results", default="docs/risk-results/results.json")
     rr.add_argument("--img", default="docs/img")
     rr.set_defaults(func=cmd_risk_report)
+
+    exp = sub.add_parser("experiments", help="A/B tests of fraud rules on a bank with known truth")
+    exp_sub = exp.add_subparsers(dest="action", required=True)
+    eb = exp_sub.add_parser("build", help="build the counterfactual banks (about 2 minutes each)")
+    eb.add_argument("--out", default=None)
+    eb.add_argument("--force", action="store_true")
+    eb.set_defaults(func=cmd_experiments_build)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)

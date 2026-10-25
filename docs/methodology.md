@@ -286,6 +286,89 @@ fitted tail, not on observed 1-in-200 years, and is reported as a model output w
 Fraud arrives from the simulator's constant attack mix, so there is no regime change to forecast;
 adaptive attackers are step 8.
 
+## 9. Experiment lab: protocol fixed before any outcome was read (step 8)
+
+The counterfactual banks were started building before this section was written, but no outcome
+table had been opened. Anything chosen after the first result is recorded as an amendment at the
+end of this section.
+
+**The question.** Does a change to the bank's real-time rules reduce fraud loss, at what cost to
+genuine customers, and how long must the test run to say so with the error rates promised? Asked
+of a bank where the answer is known: the simulator builds the same world under two rule sets
+(section 2), so every customer has an outcome under both.
+
+**Unit, population, window.**
+- Unit: the customer. Population: genuine customers onboarded before 1 January 2025 (about
+  190,000). Assignment: completely randomised, exactly half to each arm, from a seeded generator.
+- The new rules apply from 1 January 2025; the outcome window ends 30 June 2025 (25 whole weeks
+  plus six days). Covariates are measured from 1 July to 31 December 2024 in the baseline bank.
+- Control is the baseline rules (`baseline_v1`). Treatments: `velocity3` (velocity limit 6 to 3),
+  `device500` (new-device step-up from MXN 3,000 to 500) and `tight_all` (those two plus the
+  young-beneficiary step-up from 2,000 to 500 and the night-time step-up from 5,000 to 1,000).
+  Three, fixed now; no others will be tried.
+
+**Truth.** The true effect of a rule on a metric is the mean over *all* eligible customers of the
+outcome under the treatment bank minus the outcome under the baseline bank (the finite-population
+average treatment effect). An experiment on a random half estimates it. Outcomes are assigned
+from the two separate worlds, which assumes no interference between customers; that assumption is
+built in, not tested, and is a stated limit.
+
+**Metrics.**
+
+| | Metric | Why |
+|---|---|---|
+| P1 (primary) | approved fraud loss, pesos per customer, true basis | what the rule is for |
+| G1 (guardrail) | share of customers with at least one failed verification or decline of a genuine outgoing attempt | a customer who could not pay |
+| G2 (guardrail) | step-ups per customer | verification burden even when it is passed |
+| S1 to S3 | fraud claims per customer; takeover loss; card-testing loss | where the effect comes from |
+
+**Estimators, fixed.** E1: difference in means, Welch standard error. E2: CUPED with the metric's own
+pre-period value as the single covariate. E3: regression adjustment with the interacted
+specification of Lin (2013) and robust standard errors, on five pre-treatment covariates
+(log of pre-period approved outgoing count and pesos, pre-period failed verifications, pre-period
+step-ups, tenure). Intervals are normal at 95%. For the primary metric a permutation test is
+computed as well, because a rare heavy-tailed outcome can break the normal approximation.
+
+**Criteria, all stated as pass or report.**
+- *V1, A/A.* 4,000 re-randomisations of the baseline bank, every metric and estimator. The share of
+  tests rejecting at 5% must fall inside the exact two-sided 99% binomial band for that number of
+  runs. A failure is a finding and is reported with the remedy it forces (for P1 the permutation
+  test replaces the normal one), not hidden.
+- *V2, planted effect.* For each treatment and metric, 2,000 re-randomisations. The mean estimate
+  must be within one Monte Carlo standard error of the truth (bias), and the 95% interval must
+  contain the truth in at least 93% of runs. The share of runs with p below 0.05 is the power.
+- *V3, sample ratio mismatch.* The arm counts are tested against 50/50 at p below 0.001 before any
+  outcome. A deliberately broken assignment (5% of one arm's customers dropped at random from the
+  analysis table) must be flagged, and the unbroken one must pass.
+- *V4, sequential.* Looks at the end of each of 25 whole weeks, 4,000 A/A runs and the same under
+  each treatment. Procedures: the naive test at every look, Lan-DeMets alpha-spending of the
+  Pocock type and of the O'Brien-Fleming type (information fraction taken as calendar time), and
+  the mixture sequential probability ratio test with a normal mixing standard deviation of 25% of
+  the control mean. The two spending boundaries and the mixture test must keep the A/A rate of
+  *any* rejection inside the 99% band around 5%; the naive one is expected not to. Power and median
+  stopping week are reported.
+- *V5, delayed labels.* At each weekly look the effect is read three ways: from true losses (the
+  bank cannot see these), from reported losses only, and from reported losses weighted by the
+  inverse of the completion factor of the step 7 delay model fitted on 2024 claims alone. No
+  pass mark: the question is how far the reported readout lags the truth and whether the
+  weighting closes it.
+- *V6, selection.* Rolling a rule out to the newest third of customers by onboarding date instead
+  of randomising. The naive difference, the tenure-adjusted one and the inverse-probability one
+  are scored against the truth for that same subpopulation's randomised effect. Separately, a ratio
+  metric (fraud pesos approved per MXN 1,000 of genuine pesos approved, summed within each arm) is
+  compared with the per-customer effect it is often mistaken for. No pass mark; the claim is a bias
+  or a sign.
+- *Power.* Simulated by re-randomisation at 4, 8, 13 and 25 weeks of accrual for P1 and G1 under each
+  treatment, and the smallest effect detectable with 80% power at each length.
+
+**Counted.** Three estimators, three treatments, five outcome metrics, four procedures. The
+numbers of variants tried are reported next to every best result.
+
+**Limits stated now.** One bank and one seed of the world; the effect of a rule is constant over
+the window; attackers adapt within an episode (section 2) but do not learn across customers, so
+the interference an adapting fraud ring would create is not tested; the guardrail of friction is
+the simulator's, and a real customer's tolerance is not.
+
 ## 6. Decision log
 
 | Date | Decision | Why |
@@ -302,3 +385,4 @@ adaptive attackers are step 8.
 | 2026-10-25 | Step 7 protocol fixed before fitting: claim definition, four IBNR methods, selection block then a confirmation block, FFT aggregate, 200-world calibration | Methodology rule: no bending the protocol to the results; the simulator keeps every report, so ultimates are checkable |
 | 2026-10-25 | Reported-ultimate and true-loss kept as separate targets; never-reported share is a named gross-up | Reports cannot reveal what is never reported; pretending otherwise would hide the largest uncertainty |
 | 2026-10-25 | Step 7 amendments after fitting began: frequency months screened by the delay model, a fifth IBNR variant (M4s), a third severity candidate (splice with shape at least 0), a parametric bootstrap for the frequency, an end-of-data guard | Each was forced by something visible in the data (a 12% card-testing tail, a lognormal mean half the data's, an interval that collapsed to a point); all are listed under section 8 |
+| 2026-10-25 | Experiments judged on the same bank built under two rule sets; protocol (V1 to V6) fixed before any outcome table was read | An A/B method is only trusted if it recovers a known effect and holds its error rate |
