@@ -394,6 +394,31 @@ def cmd_experiments_labels(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_aml_run(args: argparse.Namespace) -> int:
+    """Run every study of docs/methodology.md section 10 and write the results file."""
+    from fincrime.aml import pipeline
+
+    paths = get_paths()
+    pipeline.run(
+        paths.processed / "bank",
+        paths.processed / "aml",
+        paths.processed / "amlworld",
+        Path(args.out),
+        prevalence=not args.skip_prevalence,
+    )
+    print(f"wrote {args.out}")
+    return 0
+
+
+def cmd_aml_report(args: argparse.Namespace) -> int:
+    """Draw the AML figures and write the example case summaries."""
+    from fincrime.aml import report
+
+    report.write(Path(args.results), Path(args.img), Path(args.cases))
+    print(f"figures in {args.img}, case summaries in {args.cases}")
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -605,6 +630,18 @@ def build_parser() -> argparse.ArgumentParser:
     ep.add_argument("--out", default="docs/experiment-results/results.json")
     ep.add_argument("--img", default="docs/img")
     ep.set_defaults(func=cmd_experiments_report)
+
+    aml = sub.add_parser("aml", help="laundering detection: rules, graph features, case workload")
+    aml_sub = aml.add_subparsers(dest="action", required=True)
+    ar = aml_sub.add_parser("run", help="run the studies (about 20 minutes with prevalence)")
+    ar.add_argument("--out", default="docs/aml-results/results.json")
+    ar.add_argument("--skip-prevalence", action="store_true")
+    ar.set_defaults(func=cmd_aml_run)
+    ap = aml_sub.add_parser("report", help="draw the figures and case summaries")
+    ap.add_argument("--results", default="docs/aml-results/results.json")
+    ap.add_argument("--img", default="docs/img")
+    ap.add_argument("--cases", default="docs/aml-results/case-summaries.md")
+    ap.set_defaults(func=cmd_aml_report)
 
     ing = sub.add_parser("ingest", help="public benchmark datasets from Kaggle")
     ing_sub = ing.add_subparsers(dest="action", required=True)

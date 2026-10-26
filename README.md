@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 8 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
-> point-in-time feature store, the fraud models and the fraud loss model and the experiment lab are built and tested; the final 180-million-row
-> benchmark run is pending. Next: AML (step 9).
+> Status: **step 9 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
+> point-in-time feature store, the fraud models, the fraud loss model, the experiment lab and the AML module are built and tested; the
+> final 180-million-row benchmark run is pending. Next: governance pack (step 10).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -22,7 +22,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 | `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | built, final benchmark pending |
 | `fraud` | Point-in-time features, time-based validation, delayed labels, fixed review budgets, cost-optimal thresholds, fairness, drift, BAF check | done |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | done |
-| `aml` | Rules vs graph analytics, typology coverage, alert workload | planned |
+| `aml` | Rules vs trees vs graph features, typology coverage, alert workload, AMLworld benchmark | done |
 | `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses with capital intervals, 200-bank calibration; model cards still to come | done (model cards: planned) |
 
 ## The synthetic bank (step 2)
@@ -217,6 +217,26 @@ customers, repeated thousands of times, and every method is scored against the t
 Two checks fell short and are reported as such (takeover-loss A/A at 4.0% against a 4.1% band edge;
 a sample-ratio check misses an outcome-dependent table 16% of the time). Full write-up, power
 tables and the ten protocol amendments: [docs/experiment-lab.md](docs/experiment-lab.md).
+
+## AML module (step 9)
+
+Fifty planted mule rings (219 laundering episodes) in a bank of 200,000 customers; four rules, boosted
+trees and graph features are scored on how many cases a week an investigation team must open.
+
+![Workload](docs/img/aml_workload.png)
+
+- Four rules together find every episode at 14.8 cases a week (1.7 investigators); one rule
+  (pass-through) alone finds 99%. **The primary comparison at 20 cases a week is saturated** and is
+  reported as such.
+- Where detectors differ: at 5 cases a week trees find 90% of episodes against 66% for the rules
+  (CI of the gap 16 to 32 points); graph features *hurt* there (65%, and one of five refits finds 2%),
+  and help on fraud-proceeds mules (44% against 22% at 100 cases).
+- With half the rings the trees collapse (31% at 5 cases) while rules hold (73%).
+- On IBM AMLworld, who an account deals with triples PR-AUC (0.13 to 0.41) with state-before-transaction
+  features and a three-way feature ablation.
+
+Caveats first (synthetic, rules and simulator share an author, 48 rings, a phone-sharing artefact) and
+the ten protocol amendments: [docs/aml.md](docs/aml.md).
 
 ## Data
 

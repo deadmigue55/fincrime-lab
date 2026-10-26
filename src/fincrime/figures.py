@@ -55,11 +55,17 @@ def _frame(width: float, height: float, ncols: int = 1) -> tuple[plt.Figure, np.
 
 
 def _finish(
-    fig: plt.Figure, path: Path, title: str, subtitle: str, left: float = 0.07, wspace: float = 0.28
+    fig: plt.Figure,
+    path: Path,
+    title: str,
+    subtitle: str,
+    left: float = 0.07,
+    wspace: float = 0.28,
+    footer: str = FOOTER,
 ) -> None:
     fig.text(0.015, 0.965, title, fontsize=14, fontweight="bold", color=INK, va="top")
     fig.text(0.015, 0.905, subtitle, fontsize=10, color=INK2, va="top")
-    fig.text(0.015, 0.012, FOOTER, fontsize=7.5, color=MUTED, va="bottom")
+    fig.text(0.015, 0.012, footer, fontsize=7.5, color=MUTED, va="bottom")
     fig.subplots_adjust(top=0.78, bottom=0.15, left=left, right=0.97, wspace=wspace)
     fig.savefig(path, dpi=150, facecolor=SURFACE)
     plt.close(fig)

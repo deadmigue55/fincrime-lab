@@ -438,6 +438,135 @@ Recorded in the order they happened, each with what had been seen.
    99%. The outcome-dependent loss, which is the dangerous case, is reported as a detection rate and
    not as a pass: a sample ratio check is not a guarantee against it.
 
+## 10. AML module: protocol fixed before any detector was scored (step 9)
+
+Written after looking only at counts (laundering episodes, rings, event volumes, how much genuine
+traffic looks like each typology), never at an alert or a score.
+
+**Question.** Which laundering does a rule set catch, which does a graph add, and how many cases
+must investigators open per week to get there?
+
+**What is planted** (`docs/assumptions.md`): 50 mule rings, 219 laundering episodes (111
+scatter-gather, 108 structuring), plus cover activity by the mules (small card purchases) and the
+proceeds of takeovers forwarded through mules (`mule_forward`: 332 events tagged laundering that
+belong to fraud episodes; 272 were approved and are the ones a bank can see). Those are **not** positives of the primary result and not of any
+training label; they get their own row in the coverage table, because a mule that moves stolen
+money is laundering in practice.
+Genuine traffic: 1.42M account-to-account transfers among 162,283 accounts (mean 2,800 MXN, 99th
+percentile 29,600), 1.14M cash-ins (mean 2,360, 99th percentile 19,200). These counts decided the
+edge filter below: unfiltered, the genuine transfer graph is one giant component.
+
+**Truth.** An account is *laundering in week w* if it has at least one event of type scatter-gather,
+structuring or mule-aging cover (`crime_class = 'laundering'` and `fraud_type` not `mule_forward`)
+in that week. An *episode* is detected if any account that takes part
+in it is alerted in a week the episode is active or in the week after it ends. Mule-aging cover
+events count as laundering activity of the account (a real bank would not know they are cover).
+
+**Monitoring unit.** A weekly batch, like a real transaction-monitoring system: on each Sunday every
+account active in the lookback gets features over the lookback window ending that day (default 4 weeks
+of 28 days; 1, 2 and 13 weeks are the sensitivity), and is scored once. Nothing after the Sunday is used
+(same point-in-time rule as step 5). Cases: alerted accounts joined into one case when they share a
+transfer edge or a device in the lookback, so two accounts of one ring are one case.
+
+**Detectors** (thresholds fixed here, none tuned; the rule windows are in calendar days, so "24 hours"
+and "48 hours" mean the day of the event and the day before it):
+
+| Id | What | Rule |
+|---|---|---|
+| R1 | structuring | at least 3 cash-ins between 80% and 100% of the 15,000 MXN line in 7 days |
+| R2 | pass-through | received at least 50,000 MXN and sent out at least 80% of it within 24 hours |
+| R3 | fan-out | at least 4 distinct internal counterparties in 48 hours, total at least 100,000 MXN |
+| R4 | shared device | the account's device was used by at least 4 other accounts in the lookback |
+| M0 | R1 or R2 or R3 or R4 | the rule bundle, as a bank would run it |
+| M1 | boosted trees on account features | in/out counts and pesos, cash-in near the line, pass-through ratio, account age; no graph |
+| M2 | M1 plus graph features | degree and neighbour degree, two-hop reach, pass-through of neighbours, size and flow of the component of the filtered graph (edges of at least 20,000 MXN in the lookback), shared-device count |
+
+Boosted trees are fixed (scikit-learn histogram gradient boosting, depth 3, 200 rounds, learning
+rate 0.1, 2% of non-laundering account-weeks in training) and are not tuned.
+Folds: five, **by ring** (all accounts and episodes of a ring in one fold), so a model never sees the
+ring it is scored on. Non-ring accounts are assigned to folds at random.
+
+**Primary result.** Share of laundering episodes detected when the detector may open **20 cases per
+week** (the models take their top-scored accounts, in rank order, until 20 cases are open; the rule bundle is
+reported at its natural volume and, separately, cut to 20 by its highest-pesos alerts). Compared:
+M2 against M0 and against M1, with a 95% interval from a cluster bootstrap over the rings that have an episode (48 of the 50).
+
+**Other results** (stated, not primary): the typology coverage table (each typology by each
+detector); the workload curve (episodes detected against cases opened per week, and the investigator
+hours that implies at a named 4 hours per case, an assumption); precision of cases; median days from
+the start of an episode to its first alert; the lookback sweep; an ablation without the device
+features (the simulator gives every ring two phones and no genuine device is shared, so shared
+device alone may separate rings perfectly, which would say something about the simulator and not
+about graphs; step 6 treated velocity the same way); half and double the planted ring rate by
+rebuilding the whole 200,000-customer bank at that rate.
+
+**External benchmark: IBM AMLworld** (HI-Small and LI-Small, the published 60/20/20 temporal split
+by transaction time). Edge-level boosted trees with and without graph features, reported as
+precision-recall AUC and recall at fixed alert budgets, and the share of each of the published
+pattern types (fan-out, fan-in, cycle, scatter-gather, gather-scatter, bipartite, stack, random)
+caught at the budget. No figure is quoted from the paper: published numbers for this dataset
+are [to verify] before being compared.
+
+**Counted.** 3 detector families (plus 4 single rules), 4 lookbacks, 3 prevalence settings, 2
+feature sets on the benchmark. All appear in the tables.
+
+**Limits stated now.** The rules and the simulator share an author, so a rule that matches a planted
+pattern is partly circular; AMLworld is the check. Only 50 rings, so intervals are wide and a
+single ring moves a typology rate by 2 points. Truth is complete (every launderer is known), unlike
+real SARs, which are a filtered and biased sample of what investigators found. The bank sees one
+side of every external transfer: real laundering leaves for other banks, and no graph of one bank
+reconstructs it. There is no investigator feedback loop, so alerts are not refined over time.
+Regulatory reporting thresholds were not verified and are not used; the 15,000 MXN line is an
+internal assumption.
+
+### Amendments to section 10
+
+Recorded in the order they were made, each with what had been seen.
+
+1. *Refits.* The first full run used one fit per model. Two runs of identical code at four weeks of
+   lookback disagreed at 5 cases a week (trees on account features 0.877 and 0.438 of episodes; trees
+   plus graph 0.603 and 0.836), because many account-weeks of a ring score close to 1 and the
+   order at the top of a short queue is decided by tiny differences. Every model is now refitted five
+   times (new negative sample, new trees) and reported as the mean, with the range of the refits.
+   Both single-fit runs are discarded; nothing in the write-up uses them.
+2. *Rounds fixed at 70, early stopping off.* The trees were meant to be 200 rounds. The independent
+   review found that scikit-learn's default early stopping (on a random 10% of account-weeks) had
+   been stopping at 71 and 77 rounds, so the protocol line was not what ran. Turning stopping off and
+   running the 200 rounds as written made the refits far more unstable (a refit finding 1% of episodes
+   at 5 cases a week beside one finding 38%), because 1,400 positive account-weeks come from fewer
+   than 50 rings and the trees memorise them. The rounds are now fixed at 70, the stopping point
+   seen in that review, and are not tuned on detection results. The two earlier runs are discarded.
+3. *The budget is credited by rank.* The case builder groups the 600 best-scored accounts, and the
+   first version counted every member of the first 20 groups, including low-ranked accounts that
+   joined through a shared phone or transfer. A team that opens `b` cases works the accounts ranked
+   above the one that would open case `b + 1`; only those count. The review measured the difference at
+   up to 4 points at 5 to 10 cases a week in favour of the models.
+4. *Precision uses the detection window.* A case counts as a hit if a member laundered that week or the
+   week before (the weeks in which an alert is credited to an episode). The share of cases that
+   contain any ring account at all is reported next to it, because a dormant mule is a real find
+   that has nothing to see yet.
+5. *Delay in days.* The protocol promised days; the first version counted weeks, which carries no
+   information when an episode lasts under a week. It is now days from the episode's first event to the
+   Sunday ending the first alerting week.
+6. *Heavy edges by direction.* The 20,000 MXN filter is applied to each direction before the two are
+   joined, as written; the first version applied it to the sum of both directions.
+7. *The shared-phone ablation is partial.* Dropping the shared-phone count from the features leaves
+   phones in the case builder, and the rule bundle keeps R4. It is labelled that way, not as "no
+   phones". Shared phones separate rings in this simulator by construction (no genuine phone is
+   shared), so the result says as much about the simulator as about graphs.
+8. *AMLworld: three feature sets, strict ties, early stopping off.* The first graph set added receiver
+   history and pair-seen at once, so "the graph adds" was confounded with "more history". There are
+   now three sets: own fields and sender history; plus the receiver's history; plus distinct partners
+   and pair-seen. The graph's contribution is the third against the second. The file records minutes;
+   the first version let a transaction see others of the same minute in file order, and now sees only
+   earlier minutes (the review measured the effect at under one point of PR-AUC).
+9. *Scores are ranked as log-odds.* Predicted probabilities of many account-weeks reach exactly 1.0 in
+   single precision, and ties are then broken by array order, which is arbitrary. The decision
+   function (log-odds) is used for ranking; it is the same order wherever the probabilities differ.
+10. *Saturation is a finding.* At 20 cases a week every detector finds essentially every episode, and
+   one rule (R2) alone finds 99% of them, so the primary comparison cannot rank detectors. Lower budgets
+   and the benchmark are where they differ, and are reported as secondary.
+
 ## 6. Decision log
 
 | Date | Decision | Why |
