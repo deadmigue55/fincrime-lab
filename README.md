@@ -3,9 +3,9 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 9 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
-> point-in-time feature store, the fraud models, the fraud loss model, the experiment lab and the AML module are built and tested; the
-> final 180-million-row benchmark run is pending. Next: governance pack (step 10).
+> Status: **step 10 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
+> point-in-time feature store, the fraud models, the fraud loss model, the experiment lab, the AML module and the governance pack are built and tested; the
+> final 180-million-row benchmark run is pending. Next: dashboard and release (step 11).
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -23,7 +23,8 @@ one shared warehouse, and tests every method on data where the answer is known.
 | `fraud` | Point-in-time features, time-based validation, delayed labels, fixed review budgets, cost-optimal thresholds, fairness, drift, BAF check | done |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | done |
 | `aml` | Rules vs trees vs graph features, typology coverage, alert workload, AMLworld benchmark | done |
-| `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses with capital intervals, 200-bank calibration; model cards still to come | done (model cards: planned) |
+| `risk` | Chargeback maturation (IBNR-style), frequency-severity fraud losses with capital intervals, 200-bank calibration | done |
+| `governance` | Model cards, self-challenge report with a 32-finding register, monitoring plan; numbers tested against the results files | done |
 
 ## The synthetic bank (step 2)
 
@@ -237,6 +238,23 @@ trees and graph features are scored on how many cases a week an investigation te
 
 Caveats first (synthetic, rules and simulator share an author, 48 rings, a phone-sharing artefact) and
 the ten protocol amendments: [docs/aml.md](docs/aml.md).
+
+## Governance pack (step 10)
+
+Model cards for the fraud, fraud-loss and AML models, and a validation report written the way a
+bank's model risk team would ask for it ([docs/governance/](docs/governance/README.md)).
+
+- **32 findings registered**, each with who found it, severity and status (17 fixed, 3 amended,
+  6 open and documented, 6 reported as results). Two overturned a choice the author had already made
+  (the IBNR method the protocol picked was the worst on pesos bias and error in 200 banks; the graph
+  AML model is unstable at the default lookback).
+- A monitoring plan with amber and red thresholds per model (PSI, recall at a fixed threshold,
+  false-alarm ratio by income band, IBNR actual against expected, AML refit range). The thresholds are
+  proposals, not calibrated on a real bank.
+- `tests/test_governance.py` fails if a headline number in a card no longer matches the results file. It
+  already caught one rounding error in the step-6 write-up (MXN 2.36M should be 2.35M).
+- Honest scope: this is a self-challenge by one builder plus read-only code reviews of steps 7 to 9,
+  not an independent human validation; the report says so on its first page.
 
 ## Data
 

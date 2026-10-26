@@ -15,7 +15,7 @@ truth, which no real bank can. That is the point of the exercise and also its li
 say the *method works when its assumptions hold*, not what a real bank's capital would be. The
 99.5% capital figure rests on a fitted tail of about 30 takeover and 60 card-testing claims and is the least certain
 number in this document. A second, equally important finding: the method the protocol picked
-before fitting (chain ladder by fraud type) turned out the worst-calibrated of the four across 200
+before fitting (chain ladder by fraud type) turned out the worst on pesos bias and error of the four across 200
 banks, and the delay model is the one used. Both are reported.
 
 ## What a claim is
@@ -108,8 +108,8 @@ seconds, which makes the study possible):
 | M3 | +12% | 0.22 | n/a | +20% | 0.51 | n/a |
 | **M4** | **+3.7%** | **0.22** | **94.0%** | +20% | 0.60 | 88.5% |
 
-M2, the protocol's pick, is the worst of the four on both targets; its intervals cover the truth
-in 69% of banks where 95% was promised. M4 is the only one with intervals close to nominal, and it
+M2, the protocol's pick, is the worst of the four on pesos bias and pesos error (on counts M1 is
+worse); its pesos intervals cover the truth in 69% of banks where 95% was promised (M1: 67.5%). M4 is the only one with intervals close to nominal, and it
 is the method used from here on. Bornhuetter-Ferguson is slightly better in pesos error but gives
 no interval. This is the central lesson: a rule fixed in advance is protection against picking
 after seeing the answer, and it is also allowed to be wrong, in which case you say so. The protocol's
@@ -186,7 +186,7 @@ Scenarios on exposure and on what the bank cannot see:
 
 Two sensitivities worth reading: the severity choice moves capital by more than a factor of two
 (model risk is the largest uncertainty after the sampling interval, and is why the held-out test
-matters), while onboarding and the never-reported share move it by 5 to 20%.
+matters), while onboarding and the never-reported share move it by 2% to 13%.
 
 ![Aggregate loss](img/risk_aggregate.png)
 

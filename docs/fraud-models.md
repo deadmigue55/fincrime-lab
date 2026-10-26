@@ -95,8 +95,8 @@ Leave one feature family out, refit, and score the validation block:
 No single feature does the work, and it is the planted mechanisms that matter: burst velocity for
 card testing, novelty for takeovers. One warning for anyone deploying this: the *friction* family
 is built from the incumbent's own declines. Replace the incumbent and those inputs change, a
-feedback loop this static evaluation cannot show (step 8 can: it re-runs the world under a
-different policy).
+feedback loop this static evaluation cannot show. Step 8 re-runs the world under other rule
+policies to test rules and estimators; it does not re-score this model, so the loop is untested.
 
 ## Cost, and the best review budget
 
@@ -109,7 +109,7 @@ and held fixed on the test block:
 | Unit costs | No flags | Incumbent rules | Model at the validated budget | Saving vs rules (95%) |
 |---|---|---|---|---|
 | Half | 5.33M | 1.86M | 0.70M | 1.16M (0.91 to 1.35) |
-| **As stated** | 5.33M | 3.19M | **0.84M** (0.60 to 1.09) | **2.36M** (2.11 to 2.56) |
+| **As stated** | 5.33M | 3.19M | **0.84M** (0.60 to 1.09) | **2.35M** (2.11 to 2.56) |
 | Double | 5.33M | 5.86M | 1.10M | 4.76M (4.52 to 4.99) |
 
 Millions of pesos over the three test months. The rules sit to the right of the cost minimum: they
@@ -173,4 +173,4 @@ paper before quoting any.
   honest counterweight. IEEE-CIS is not yet used (its competition rules still need accepting).
 - Unit costs are assumptions, shown at half and double. A step-up check an attacker can pass is not
   modelled for the model's flags.
-- No attacker adaptation to the new model: that is step 8.
+- No attacker adaptation to the new model: not tested (step 8 tests rule changes, not this model).
