@@ -246,8 +246,8 @@ the ten protocol amendments: [docs/aml.md](docs/aml.md).
 Model cards for the fraud, fraud-loss and AML models, and a validation report written the way a
 bank's model risk team would ask for it ([docs/governance/](docs/governance/README.md)).
 
-- **32 findings registered**, each with who found it, severity and status (17 fixed, 3 amended,
-  6 open and documented, 6 reported as results). Two overturned a choice the author had already made
+- **32 findings registered**, each with who found it, severity and status (18 fixed, 3 amended,
+  5 open and documented, 6 reported as results). Two overturned a choice the author had already made
   (the IBNR method the protocol picked was the worst on pesos bias and error in 200 banks; the graph
   AML model is unstable at the default lookback).
 - A monitoring plan with amber and red thresholds per model (PSI, recall at a fixed threshold,

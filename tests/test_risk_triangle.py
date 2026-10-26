@@ -9,10 +9,10 @@ import pytest
 from fincrime.risk import triangle as tri
 
 # Taylor and Ashe (1983), the triangle every reserving package ships as ``GenIns``. The reference
-# figures below (chain-ladder reserve 18,680,856; Mack standard errors by cohort and 2,447,618 in
-# total) are the ones I recall from the ChainLadder package and Mack (1993); I could not re-check
-# them against a source online. The implementation reproduces the reserve and every per-cohort
-# error to the peso, and the total to 0.02%, which is why the total is asserted with a tolerance.
+# figures below (chain-ladder reserve 18,680,856; Mack standard errors by cohort and 2,447,095 in
+# total) were checked against R's ChainLadder 0.2.21, MackChainLadder(GenIns, est.sigma = "Mack"),
+# on 2026-10-25. An earlier version of this test used 2,447,618 from memory with a 0.1% tolerance,
+# which hid the difference; that figure was wrong.
 TAYLOR_ASHE = [
     [357848, 1124788, 1735330, 2218270, 2745596, 3319994, 3466336, 3606286, 3833515, 3901463],
     [352118, 1236139, 2170033, 3353322, 3799067, 4120063, 4647867, 4914039, 5339085],
@@ -54,7 +54,7 @@ def test_mack_standard_error_matches_the_published_value():
         971258,
         1363155,
     ]
-    assert total == pytest.approx(2_447_618, rel=1e-3)
+    assert total == pytest.approx(2_447_095, abs=1)
     assert se[0] == 0.0
 
 

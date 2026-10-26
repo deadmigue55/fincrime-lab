@@ -42,7 +42,7 @@ reported claims at factors 0.5, 1 and 2.
 | Out of time, 200 banks | 90% interval covered the realised loss in 92% of banks (the expected-loss interval, without process noise, in 87.5%; mean PIT 0.56) |
 | Expected annual loss (reported basis: 3.39M account-months, onboarding continues at the last six months' mean) | MXN 9.02M (90% interval 7.44 to 11.13) |
 | **Capital (VaR 99.5% minus EL)** | **MXN 2.12M (90% interval 1.14 to 3.77)** |
-| Known-answer test | Taylor-Ashe triangle: chain-ladder reserve 18,680,856 reproduced to the peso |
+| Known-answer test | Taylor-Ashe triangle: reserve 18,680,856 and total Mack error 2,447,095 match R's ChainLadder |
 
 ## 5. Sensitivities
 
@@ -69,8 +69,9 @@ months of history hold about MXN 3.2M of claims a year, so read 9.02M with its g
 4. **The trend rule cannot act:** a log-linear trend is tested and none was found, but the forecast
    has no trend branch.
 5. M1 and M2 intervals are the weakest (the bootstrap holds the tail factor fixed).
-6. One figure is unverified: the Taylor-Ashe total standard error differs by 523 from a number
-   recalled from memory that could not be confirmed online.
+6. The Taylor-Ashe known-answer test (reserve, per-cohort errors and the total standard error of
+   2,447,095) matches R's ChainLadder package; this was checked late, and an earlier reference
+   figure in the test was wrong (finding 15).
 
 ## 7. Monitoring and re-validation
 

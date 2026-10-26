@@ -34,7 +34,7 @@ and capital (step 7), AML detection (step 9). Model cards: [README.md](README.md
 | Test | Fraud scoring | Fraud loss | AML |
 |---|---|---|---|
 | Protocol before scoring | methodology section 7 (committed first) | section 8 (committed first) | section 10 (text only; see section 1) |
-| Known-answer or hand-built test | feature tests against a slow Python oracle on a 2,500-customer, 36-day bank (the oracle shares the author's definition of arrival time) | chain ladder on the Taylor-Ashe triangle: reserve 18,680,856 and each per-cohort error match; the total error does not (finding 15). FFT against Monte Carlo and a constant-claim Poisson | hand-built events for the three daily rules (the R3 case would fail with a window one day early; R1 and R2 cases would not); case join by transfer or phone |
+| Known-answer or hand-built test | feature tests against a slow Python oracle on a 2,500-customer, 36-day bank (the oracle shares the author's definition of arrival time) | chain ladder on the Taylor-Ashe triangle: reserve 18,680,856, each per-cohort error and the total error match R's ChainLadder (finding 15). FFT against Monte Carlo and a constant-claim Poisson | hand-built events for the three daily rules (the R3 case would fail with a window one day early; R1 and R2 cases would not); case join by transfer or phone |
 | Leakage control | an event is known only if it happened and was recorded before the scored attempt (late events are excluded until they arrive); 120-day purge gap | out-of-time severity re-chosen on 2024 alone | a snapshot never reads past its week (one week, one 6,000-customer bank, snapshot code only: tables are filtered after being built); benchmark features use the state before the minute (tested, including same-minute rows) |
 | Outcomes against truth | held-out quarter; 95% cluster bootstrap by account | 200 banks of known truth; out of time | 5 folds by ring, 5 refits, ring-cluster bootstrap |
 | Benchmark | BAF | | AMLworld HI-Small and LI-Small |
@@ -65,7 +65,7 @@ hides a weakness, **Low** is presentation or a small departure. Status: *Fixed* 
 | 12 | 7 | Trend rule is tested but the forecast has no trend branch | Low | Code review | Open: no trend found in this bank |
 | 13 | 7 | The first 24 of 200 worlds were computed with older code | Low | Not recorded | Fixed: the whole study rerun |
 | 14 | 7 | Severity model moves capital by more than a factor of two (2.12M against 0.97M), but the lognormal alternative was rejected on held-out data (it understates the card-testing mean by 44%); the chosen splice has its tail shape at the boundary (zero, an exponential tail) after the unconstrained fit went negative | High | Sensitivity run | Finding: severity remains the largest model risk; a tail with a negative shape or another family is not shown |
-| 15 | 7 | Taylor-Ashe total standard error differs by 523 from a figure recalled from memory (2,447,095 against 2,447,618); the test tolerance of 0.1% hides it. Either the recalled figure is wrong or the total's covariance term is | Medium | Known-answer test | Open: not verified against a reference implementation |
+| 15 | 7 | The Taylor-Ashe test used a total standard error recalled from memory (2,447,618) with a 0.1% tolerance that hid a 523 difference from our code's 2,447,095 | Medium | Known-answer test, then R's ChainLadder 0.2.21 | Fixed: R gives 2,447,095, so the recalled figure was wrong; the test now asserts it to the unit |
 | 16 | 8 | A check that could not fail (V3 with exact halves), and a leak of hidden truth into the V5 weights | Medium | Code review | Fixed: amendments 8 and 9 (experiment lab section 9) |
 | 17 | 8 | Label-study resume keyed only by seed: a rerun with other settings would silently reuse the wrong results (no published result is known to be wrong) | Medium | Ponytail review (a review plugin, not independent) | Fixed: key is (seed, treatment, customers), cut-off lines skipped (e80e6ae) |
 | 18 | 8 | Two checks fell short: takeover-loss false-positive rate 4.0% against a 4.1% band edge, and detection of an outcome-dependent table loss 83.9% | Low | Acceptance tests | Finding: reported with the reason |
@@ -84,7 +84,7 @@ hides a weakness, **Low** is presentation or a small departure. Status: *Fixed* 
 | 31 | 8 | Criteria changed after data were seen: V2 bias tolerance 1 to 3 Monte Carlo standard errors (6 of 54 cells exceed 1, worst 2.01), V4 made one-sided, V3 pass mark set after the first run | Medium | Author's disclosure (amendments 6, 7 and 10) | Amended: recorded with the reason; V1 still fails |
 | 32 | 8 | The label study read the delay clock from a different origin in two code paths and used a different completion floor | Medium | Ponytail review | Fixed: shared clock and completion (e80e6ae); study rerun |
 
-32 findings: 5 High, 21 Medium, 6 Low; 17 Fixed, 3 Amended, 6 Open, 6 Finding.
+32 findings: 5 High, 21 Medium, 6 Low; 18 Fixed, 3 Amended, 5 Open, 6 Finding.
 
 ## 5. Challenges that came back clean, and the caveats on each
 
@@ -137,4 +137,3 @@ step-up or review process change; a regulator or audit request.
 - Benchmarking against a vendor or challenger model.
 - Review of how investigators use the output (override rates, case notes).
 - Stress tests the simulator cannot produce: attacker adaptation, regime change, claim inflation.
-- A reference implementation (for example R's ChainLadder package) to settle the Taylor-Ashe total.

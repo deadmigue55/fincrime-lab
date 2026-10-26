@@ -88,8 +88,7 @@ Four methods, scored at 13 month-end dates with the future hidden, on both claim
 
 Mack's standard error and an England-Verrall over-dispersed Poisson bootstrap give the intervals
 for M1 and M2. The chain-ladder code is checked against the Taylor-Ashe triangle (reserve
-18,680,856 reproduced to the peso; Mack's per-cohort errors match to the peso, the total differs by
-523 from the figure we recalled and could not verify online, see limits).
+18,680,856 reproduced to the peso; Mack's per-cohort errors match to the peso, the total, 2,447,095, matches R's ChainLadder package).
 
 **The protocol.** Selection dates 30 June to 31 December 2024 (seven), confirmation 31 January to
 30 June 2025 (six), rule: lowest mean absolute error of IBNR **pesos** on the selection block, ties
@@ -235,9 +234,9 @@ older code and the whole study was rerun.
 - **The annual count** is moment-matched to a negative binomial rather than derived from the monthly
   series, and the England-Verrall bootstrap holds the tail factor fixed; the ODP interval is too
   narrow when the tail is large. M1 and M2 intervals are the weakest in the table for that reason.
-- **Taylor-Ashe.** The per-cohort Mack errors match the published ones; the total (2,447,095 in our
-  code) differs by 523 from a figure recalled from memory that could not be confirmed online. The
-  chain-ladder reserve (18,680,856) is exact.
+- **Taylor-Ashe.** The reserve (18,680,856), every per-cohort Mack error and the total (2,447,095) match
+  R's ChainLadder 0.2.21 (`MackChainLadder(GenIns)`). An earlier version of the test used a total
+  recalled from memory (2,447,618), which was wrong, with a tolerance that hid it.
 - **Synthetic data.** The delay shapes, report rates and amounts are our own assumptions
   ([assumptions.md](assumptions.md)); nothing here is a measurement of a real institution.
 
