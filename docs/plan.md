@@ -54,7 +54,7 @@ Each step is one or more commits, pushed in blocks.
 | 1 | Package scaffold: uv, config, `doctor`, lint, tests, CI | `uv run fincrime doctor` passes, CI green |
 | 2 | **Done.** Banco Sintético simulator (latent, policy and observed layers) and `assumptions.md` | 18 of 18 acceptance checks pass on a 200,000-customer build, 37 tests, deterministic |
 | 3 | **Mostly done.** Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium loaded and row-counted; AMLworld HI-Large downloading; IEEE-CIS waits for the user to accept the Kaggle rules |
-| 4 | **Nearly done.** Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | platform built and tested (16 tests, 597-drop run); final 180M-row timings pending a capped rerun |
+| 4 | **Done.** Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | platform built and tested (16 tests, 597-drop run); 180M-row scaling benchmark run and published ([benchmark-scaling.md](benchmark-scaling.md)) |
 | 5 | **Done.** Fraud features in SQL (velocity, windows, device sharing; no geo, the simulator has none) | 27.2M-row feature store, point-in-time by event time and knowledge time, oracle + truncation + leak-guard tests ([fraud-features.md](fraud-features.md)) |
 | 6 | **Done.** Fraud models, rules, thresholds, fairness, drift | Protocol fixed first; 4 candidates; recall at fixed budgets with account-level intervals on 9.1M test attempts; BAF check; ablation ([fraud-models.md](fraud-models.md)) |
 | 7 | **Done.** Chargeback maturation and fraud loss model | delay model, IBNR backtest and 200-bank calibration, frequency-severity capital with intervals ([fraud-loss.md](fraud-loss.md)) |

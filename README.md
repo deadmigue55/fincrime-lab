@@ -5,7 +5,7 @@ Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling
 
 > Status: **step 11 of 11 done: release 1.0.0**: the synthetic bank, four public benchmarks, the data platform, a
 > point-in-time feature store, the fraud models, the fraud loss model, the experiment lab, the AML module, the governance pack and the public report are built and
-> tested. **Not done: the final 180-million-row benchmark run** (see [docs/platform.md](docs/platform.md)).
+> tested. The 180-million-row scaling benchmark is done ([docs/benchmark-scaling.md](docs/benchmark-scaling.md)).
 >
 > **Live report with interactive explorers: <https://deadmigue55.github.io/fincrime-lab/>**
 > Follow progress in [docs/plan.md](docs/plan.md).
@@ -21,7 +21,7 @@ one shared warehouse, and tests every method on data where the answer is known.
 | Module | What it shows | Status |
 |---|---|---|
 | `bank` | A simulated Mexican neobank with planted fraud and laundering, calibrated to public data | done |
-| `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | built, final benchmark pending |
+| `platform` | Partitioned Parquet + DuckDB, daily incremental loads, data-quality contracts, scaling benchmark up to 180M rows | done |
 | `fraud` | Point-in-time features, time-based validation, delayed labels, fixed review budgets, cost-optimal thresholds, fairness, drift, BAF check | done |
 | `experiments` | A/B tests of fraud rules: power, sequential testing, CUPED, guardrails, selection bias | done |
 | `aml` | Rules vs trees vs graph features, typology coverage, alert workload, AMLworld benchmark | done |

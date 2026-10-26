@@ -49,9 +49,11 @@ def fig_scaling(rows: list[dict], path: Path) -> None:
     queries = list(LABELS)
     fig, axes = plt.subplots(2, 4, figsize=(13, 6.2), facecolor=SURFACE, sharex=True)
     flat = axes.ravel()
+    sub_linear = 0
     for ax, q in zip(flat, queries, strict=False):
         pts = sorted((r["rows"], r["median_s"]) for r in rows if r["query"] == q and r["median_s"])
         x, y = np.array([p[0] for p in pts]), np.array([p[1] for p in pts])
+        sub_linear += int(y[-1] / y[0] < x[-1] / x[0])
         ax.set_facecolor(SURFACE)
         ax.plot(x, x / x[0] * y[0], color=MUTED, linewidth=1, linestyle=(0, (4, 3)))
         ax.plot(x, y, color=BLUE, linewidth=2)
@@ -95,7 +97,7 @@ def fig_scaling(rows: list[dict], path: Path) -> None:
     fig.text(
         0.015,
         0.975,
-        "Queries scale at or below linear cost up to 180 million rows",
+        f"{sub_linear} of {len(queries)} queries grow more slowly than the data, {len(queries) - sub_linear} faster",
         fontsize=14,
         fontweight="bold",
         color=INK,
@@ -104,7 +106,7 @@ def fig_scaling(rows: list[dict], path: Path) -> None:
     fig.text(
         0.015,
         0.935,
-        "AMLworld HI-Large on one laptop: time grows more slowly than the data.",
+        "AMLworld HI-Large on one laptop, 1 million to 180 million rows. Above the dashed line: slower than linear growth.",
         fontsize=10,
         color=INK2,
         va="top",

@@ -1,0 +1,29 @@
+{
+  "machine": {
+    "cpu_threads": "20",
+    "memory_gb": "34",
+    "os": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.15",
+    "duckdb": "2.0.0"
+  },
+  "layouts": [
+    {
+      "layout": "sorted file",
+      "status": "ok",
+      "median_s": 0.03654929999993328,
+      "size_mb": 1152.592561
+    },
+    {
+      "layout": "shuffled file",
+      "status": "ok",
+      "median_s": 1.5660685000002559,
+      "size_mb": 1540.033921
+    },
+    {
+      "layout": "day partitions",
+      "status": "ok",
+      "median_s": 0.016131700000187266,
+      "size_mb": 992.01925
+    }
+  ]
+}

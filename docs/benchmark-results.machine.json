@@ -1,0 +1,7 @@
+{
+  "cpu_threads": "20",
+  "memory_gb": "34",
+  "os": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.15",
+  "duckdb": "2.0.0"
+}

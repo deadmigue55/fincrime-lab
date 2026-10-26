@@ -95,10 +95,19 @@ median (a single run when the first exceeds two minutes), peak memory sampled ev
 saved after every measurement, DuckDB capped at half the machine's memory with disk spill, and
 `--resume` to continue an interrupted run.
 
-**Status: the final numbers are not published yet.** A first run without the memory cap was stopped
-at 180 million rows because the distinct-count query was pushing the machine toward its memory
-limit; that is why the cap, the spill directory and incremental saving were added. The figures and
-`docs/benchmark-scaling.md` will be generated from a clean, capped run.
+**Result** (full table in [benchmark-scaling.md](benchmark-scaling.md), figure `docs/img/lake_scaling.png`):
+on 179,702,229 rows a scan-and-aggregate takes 1.2 s, a group by account 11 s, the transfer-edge
+table 40 s, distinct accounts 109 s and a rolling 24-hour velocity over every row 129 s. Four of
+the seven queries grow more slowly than the data; three grow faster (distinct accounts x1200,
+rolling velocity x1364 and the edge table x511 for 180 times the rows), so those are the ones that
+would need a different design (pre-aggregated marts, which the platform already builds, or more
+memory) beyond this size. Peak process memory was 16.9 GB, essentially the cap (half of this
+34 GB machine), so the heaviest queries may have spilled to disk (not checked per query). A first run without the cap had been
+stopped at 180 million rows when the distinct-count query pushed the machine toward its memory
+limit; that is why the cap, the spill directory and incremental saving exist. File layout, on
+the same data: day partitions read a day in 16 ms, a sorted file 37 ms and a shuffled file
+1.6 s. One machine and one run of the whole benchmark (three repeats per query, median), so treat the times as orders of
+magnitude, not a ranking of hardware.
 
 ## Run it
 
