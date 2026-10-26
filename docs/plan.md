@@ -61,7 +61,7 @@ Each step is one or more commits, pushed in blocks.
 | 8 | **Done.** Experiment lab | two-bank construction gives the true effect; A/A false-positive rate 4.0% to 5.0%, coverage 94% to 97%, peeking 28% vs 3% to 5% with alpha-spending, late-label bias 36% to 78% removed by weighting; V1 (one cell) and V3 (outcome-dependent loss) fell short and are reported ([experiment-lab.md](experiment-lab.md)) |
 | 9 | **Done.** AML module | four rules find 100% of 219 episodes at 14.8 cases a week; comparison at 20 cases saturated; trees 90% vs rules 66% at 5 cases; graph features unstable on this bank (65%, refits 2% to 89%) but help on fraud-proceeds mules and 3x PR-AUC on AMLworld ([aml.md](aml.md)) |
 | 10 | **Done.** Governance pack | three model cards, validation report with a 32-finding register and a monitoring plan; a test keeps every quoted number equal to its results file ([governance/](governance/README.md)) |
-| 11 | Dashboard, Quarto report, portfolio card, release 1.0.0 | live URL, tagged release |
+| 11 | **Done** (except the portfolio card, which waits on your review). Public Quarto report, GitHub Pages, release 1.0.0 | live URL <https://deadmigue55.github.io/fincrime-lab/>, tagged release |
 
 Highest-value cut if time is short: steps 1 to 6, then 8. That already covers data engineering,
 fraud modelling and experimentation. Priority order of modules: `platform`, `fraud`,

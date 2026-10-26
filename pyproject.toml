@@ -1,6 +1,6 @@
 [project]
 name = "fincrime-lab"
-version = "0.1.0"
+version = "1.0.0"
 description = "Fraud, AML, experimentation and fraud-loss modelling for a simulated Mexican neobank."
 readme = "README.md"
 license = "MIT"
@@ -58,6 +58,7 @@ select = [
 "src/fincrime/risk/*.py" = ["E501"]
 "src/fincrime/experiments/*.py" = ["E501"]
 "src/fincrime/aml/*.py" = ["E501"]  # prose docstrings and method names
+"src/fincrime/site.py" = ["E501"]  # the page template is prose and JavaScript
 "src/fincrime/cli.py" = ["E501"]  # help text and status lines
 
 # ── Tests ──

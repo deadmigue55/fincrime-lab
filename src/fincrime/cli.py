@@ -419,6 +419,15 @@ def cmd_aml_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_site(args: argparse.Namespace) -> int:
+    """Write the public report from the results files and render it with Quarto."""
+    from fincrime import site
+
+    src = site.build(Path(args.docs), Path(args.out), render=not args.no_render)
+    print(f"report source: {src}")
+    return 0
+
+
 def cmd_ingest_list(_: argparse.Namespace) -> int:
     """Show every source, its licence, and what is downloaded and converted."""
     from fincrime.ingest import manifest
@@ -631,6 +640,11 @@ def build_parser() -> argparse.ArgumentParser:
     ep.add_argument("--img", default="docs/img")
     ep.set_defaults(func=cmd_experiments_report)
 
+    st = sub.add_parser("site", help="write and render the public report (Quarto)")
+    st.add_argument("--docs", default="docs")
+    st.add_argument("--out", default="docs/site")
+    st.add_argument("--no-render", action="store_true", help="write the source only")
+    st.set_defaults(func=cmd_site)
     aml = sub.add_parser("aml", help="laundering detection: rules, graph features, case workload")
     aml_sub = aml.add_subparsers(dest="action", required=True)
     ar = aml_sub.add_parser("run", help="run the studies (about 20 minutes with prevalence)")

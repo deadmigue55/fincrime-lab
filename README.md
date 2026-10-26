@@ -3,9 +3,11 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 10 of 11 done**: the synthetic bank, four public benchmarks, the data platform, a
-> point-in-time feature store, the fraud models, the fraud loss model, the experiment lab, the AML module and the governance pack are built and tested; the
-> final 180-million-row benchmark run is pending. Next: dashboard and release (step 11).
+> Status: **step 11 of 11 done: release 1.0.0**: the synthetic bank, four public benchmarks, the data platform, a
+> point-in-time feature store, the fraud models, the fraud loss model, the experiment lab, the AML module, the governance pack and the public report are built and
+> tested. **Not done: the final 180-million-row benchmark run** (see [docs/platform.md](docs/platform.md)).
+>
+> **Live report with interactive explorers: <https://deadmigue55.github.io/fincrime-lab/>**
 > Follow progress in [docs/plan.md](docs/plan.md).
 
 ## Why this project
@@ -255,6 +257,14 @@ bank's model risk team would ask for it ([docs/governance/](docs/governance/READ
   already caught one rounding error in the step-6 write-up (MXN 2.36M should be 2.35M).
 - Honest scope: this is a self-challenge by one builder plus read-only code reviews of steps 7 to 9,
   not an independent human validation; the report says so on its first page.
+
+## Public report (step 11)
+
+A Quarto page written from the same results files the documents are tested against
+([docs/site](docs/site/index.qmd), live at <https://deadmigue55.github.io/fincrime-lab/site/>): the
+headline table, a review-budget explorer for the fraud model, an AML explorer (lookback, cases a
+week, refit range) and a capital explorer (scenarios, with the rejected lognormal severity shown as
+such). `uv run fincrime site` rewrites and renders it.
 
 ## Data
 
