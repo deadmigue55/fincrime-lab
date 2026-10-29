@@ -99,6 +99,7 @@ def headline_rows(fraud: dict, risk: dict, aml: dict, exp: dict) -> list[tuple[s
     a4 = aml["lookback"]["4"]
     base = risk["loss"]["scenarios"]["base"]
     aa = {p["procedure"]: p["any_reject"] for p in exp["v4"]["loss"]["aa"]}
+    fr = {p["procedure"]: p["any_reject"] for p in exp["v4"]["friction"]["aa"]}
     hi = aml["amlworld"]["HI-Small"]["models"]
     return [
         (
@@ -120,7 +121,8 @@ def headline_rows(fraud: dict, risk: dict, aml: dict, exp: dict) -> list[tuple[s
             "Experiments",
             "How wrong is an A/B test of a fraud rule?",
             f"Checking weekly gives a false winner in {pct(aa['naive'], 0)} of A/A tests; alpha-spending "
-            f"holds {pct(aa['pocock'], 0)} to {pct(aa['obf'], 0)}. Fraud loss is underpowered at 100,000 customers per arm.",
+            f"holds {pct(min(aa['pocock'], aa['obf']), 0)} to {pct(max(fr['pocock'], fr['obf']), 0)} "
+            f"(fraud loss and friction). Fraud loss is underpowered at 100,000 customers per arm.",
         ),
         (
             "AML",

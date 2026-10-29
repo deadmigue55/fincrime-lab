@@ -25,7 +25,7 @@ caught, what capital is) do not. External checks on public benchmarks are labell
 |---|---|---|
 | **Fraud scoring** | Rules or model, at the same review workload? | At 0.54% of attempts reviewed the model finds 99.3% of fraud events against 40.4% for the rules; on the hard BAF benchmark it finds 54.7% at 5% false positives. |
 | **Fraud loss and capital** | How many claims are still to come, and what capital? | Capital MXN 2.12M (90% interval 1.14 to 3.77); the 90% forecast interval covered the realised loss in 92% of 200 banks. |
-| **Experiments** | How wrong is an A/B test of a fraud rule? | Checking weekly gives a false winner in 28% of A/A tests; alpha-spending holds 3% to 3%. Fraud loss is underpowered at 100,000 customers per arm. |
+| **Experiments** | How wrong is an A/B test of a fraud rule? | Checking weekly gives a false winner in 28% of A/A tests; alpha-spending holds 3% to 5% (fraud loss and friction). Fraud loss is underpowered at 100,000 customers per arm. |
 | **AML** | Rules, trees or graph, and how many cases a week? | Rules find 100% of laundering episodes at 14.8 cases a week; trees find 90% against 66% at 5 cases; graph features are unstable here but lift AMLworld PR-AUC from 0.13 to 0.41. |
 
 Each result has a protocol written before the models were scored (steps 6 to 8; step 9 is attested
