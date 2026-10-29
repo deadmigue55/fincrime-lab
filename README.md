@@ -7,7 +7,7 @@ Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 
-> **Release 1.0.0, all 11 planned steps done.** The synthetic bank, three public benchmarks, the data
+> **Release 1.0.1, all 11 planned steps done.** The synthetic bank, three public benchmarks, the data
 > platform, a point-in-time feature store, the fraud models, the fraud loss model, the experiment lab,
 > the AML module, the governance pack and the public report are built and tested (210 tests). The
 > 180-million-row scaling benchmark is in [docs/benchmark-scaling.md](docs/benchmark-scaling.md).

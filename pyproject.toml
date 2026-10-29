@@ -1,6 +1,6 @@
 [project]
 name = "fincrime-lab"
-version = "1.0.0"
+version = "1.0.1"
 description = "Fraud, AML, experimentation and fraud-loss modelling for a simulated Mexican neobank."
 readme = "README.md"
 license = "MIT"
