@@ -170,7 +170,7 @@ paper before quoting any.
   worlds.
 - Two kinds of fraud only (takeover and card testing). Money laundering is the AML module.
 - The signal is strong because the features mirror the generator's mechanisms; the BAF result is the
-  honest counterweight. IEEE-CIS is not yet used (its competition rules still need accepting).
+  honest counterweight. IEEE-CIS is loaded (590,540 rows) but not yet modelled.
 - Unit costs are assumptions, shown at half and double. A step-up check an attacker can pass is not
   modelled for the model's flags.
 - No attacker adaptation to the new model: not tested (step 8 tests rule changes, not this model).

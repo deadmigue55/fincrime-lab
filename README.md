@@ -101,7 +101,7 @@ codes on purpose, so none can belong to a real person or account.
 
 ## Public benchmarks (step 3)
 
-The simulator is checked against public datasets so no result rests on it alone. Three are loaded (BAF, AMLworld, Sparkov); the fourth (IEEE-CIS) is listed for completeness. Each loaded one is
+The simulator is checked against public datasets so no result rests on it alone. All four are loaded and row-counted; BAF, AMLworld and Sparkov carry results, IEEE-CIS is loaded but has no model result yet. Each is
 downloaded from Kaggle with a checksum manifest, converted to typed Parquet and row-counted
 against what the authors published:
 
@@ -117,7 +117,7 @@ uv run fincrime ingest report          # writes docs/benchmarks.md
 | IBM AMLworld (Small, Medium, and Large for the scale test) | 5M to 180M transactions with labelled laundering and the planted schemes | CDLA-Sharing-1.0 |
 | Bank Account Fraud (NeurIPS 2022) | six 1M-row account-opening datasets, 8 months, built-in bias and drift | CC BY-NC-ND 4.0 |
 | Sparkov | 1.85M synthetic card transactions with merchants and geography | CC0-1.0 |
-| IEEE-CIS | 590k real e-commerce transactions. **Not used yet**: Kaggle requires accepting the competition rules by hand, and no result here depends on it | competition rules |
+| IEEE-CIS | 590,540 real e-commerce transactions (3.50% fraud). Loaded and row-verified; **no model result yet**, so nothing here depends on it | competition rules |
 
 Loading them corrected or sharpened several things recorded in
 [docs/research.md](docs/research.md): BAF has exactly 1,000,000 rows per file and a 1.103% fraud
@@ -280,7 +280,7 @@ such). `uv run fincrime site` rewrites and renders it.
 
 - **Banco Sintético**: described above. Not a real institution.
 - **Public benchmarks** (step 3): IBM AMLworld, Bank Account Fraud (NeurIPS 2022) and Sparkov, used
-  as external validation so no result rests on the simulator alone (see above). IEEE-CIS is not used.
+  as external validation so no result rests on the simulator alone (see above). IEEE-CIS is loaded but not yet modelled.
 
 See [docs/research.md](docs/research.md) for sources and how sure we are of each number, and
 [docs/methodology.md](docs/methodology.md) for the evaluation protocol and what synthetic data can

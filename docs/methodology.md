@@ -18,7 +18,7 @@ What it **cannot** show: how well a model would do at a real bank. So:
    (fraud intent, ring id, true mule flag) are visible to the evaluation code, never to models.
 2. Fraud behaviour is generated from *mechanisms* (an attacker with a budget, a playbook, and an
    adaptation rule), not from the features a model will use.
-3. Every headline is repeated on at least one **external** benchmark (BAF, AMLworld, Sparkov; IEEE-CIS was planned and never used) so
+3. Every headline is repeated on at least one **external** benchmark (BAF, AMLworld, Sparkov; IEEE-CIS is loaded but not yet modelled) so
    no claim rests on our simulator alone. When the two disagree, we report both.
 4. Prevalence and attack mix are named assumptions with a sensitivity table (half and double), and
    every figure from synthetic data carries a `SYNTHETIC` footer.

@@ -9,6 +9,7 @@ Licence: CDLA-Sharing-1.0. Publish rule: aggregate results only; derived data wo
 
 | Dataset | Transactions | Laundering | Rate | Span | Pattern txns | Pattern coverage | Pattern types |
 |---|---|---|---|---|---|---|---|
+| HI-Large | 179,702,229 | 225,546 | 0.1255% | 2022-08-01 to 2023-01-12 | 137,936 | 61% | 8 |
 | HI-Medium | 31,898,238 | 35,230 | 0.1104% | 2022-09-01 to 2022-09-28 | 22,743 | 65% | 8 |
 | HI-Small | 5,078,345 | 5,177 | 0.1019% | 2022-09-01 to 2022-09-18 | 3,209 | 62% | 8 |
 | LI-Medium | 31,251,483 | 16,041 | 0.0513% | 2022-09-01 to 2022-09-27 | 3,909 | 24% | 8 |
@@ -44,4 +45,4 @@ Licence: CC0-1.0 (Kaggle dataset metadata, checked 2026-10-29). Publish rule: re
 
 Licence: Kaggle competition rules, accepted on the website. Publish rule: treat as not redistributable; results only.
 
-Not downloaded yet: the competition rules must be accepted on Kaggle first.
+590,540 transactions, 3.50% fraud.

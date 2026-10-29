@@ -29,8 +29,8 @@ observes, so experiments and selection bias can be tested against the counterfac
 `docs/assumptions.md`; nothing claims to describe a real institution.
 
 **Layer B, public benchmarks**, used as external validation so no result rests on our own simulator
-alone: IBM AMLworld (scale and AML), BAF (fraud, fairness, drift), Sparkov (geography and merchants) and, if
-the Kaggle rules are ever accepted, IEEE-CIS (real card data; never used so far).
+alone: IBM AMLworld (scale and AML), BAF (fraud, fairness, drift), Sparkov (geography and merchants) and
+IEEE-CIS (real card data; loaded 2026-10-29, no model result yet).
 
 ## Modules
 
@@ -53,7 +53,7 @@ Each step is one or more commits, pushed in blocks.
 | 0 | Research, plan, README | docs reviewed |
 | 1 | Package scaffold: uv, config, `doctor`, lint, tests, CI | `uv run fincrime doctor` passes, CI green |
 | 2 | **Done.** Banco Sintético simulator (latent, policy and observed layers) and `assumptions.md` | 18 of 18 acceptance checks pass on a 200,000-customer build, 37 tests, deterministic |
-| 3 | **Done** (IEEE-CIS skipped). Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium/HI-Large loaded and row-counted; IEEE-CIS never downloaded (the Kaggle rules were not accepted), and no result depends on it |
+| 3 | **Done.** Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium/HI-Large loaded and row-counted; IEEE-CIS (590,540 rows) loaded on 2026-10-29; no result depends on it yet |
 | 4 | **Done.** Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | platform built and tested (16 tests, 597-drop run); 180M-row scaling benchmark run and published ([benchmark-scaling.md](benchmark-scaling.md)) |
 | 5 | **Done.** Fraud features in SQL (velocity, windows, device sharing; no geo, the simulator has none) | 27.2M-row feature store, point-in-time by event time and knowledge time, oracle + truncation + leak-guard tests ([fraud-features.md](fraud-features.md)) |
 | 6 | **Done.** Fraud models, rules, thresholds, fairness, drift | Protocol fixed first; 4 candidates; recall at fixed budgets with account-level intervals on 9.1M test attempts; BAF check; ablation ([fraud-models.md](fraud-models.md)) |
@@ -85,5 +85,5 @@ The rules for splits, metrics, uncertainty and what synthetic data can and canno
 Settled during the build: Kaggle credentials come from `.env` (step 3); the anchors are the ones in
 `research.md` (step 2); the public front end is the Quarto report on GitHub Pages (step 11).
 
-Still open: IEEE-CIS (needs the Kaggle rules accepted by hand) and an independent human validation
+Still open: a model result on IEEE-CIS (loaded, not yet modelled) and an independent human validation
 of the models, which this repo cannot supply (see `governance/validation-report.md`).

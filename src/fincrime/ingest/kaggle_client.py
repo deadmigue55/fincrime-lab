@@ -8,6 +8,7 @@ rules have been accepted on the Kaggle website.
 
 from __future__ import annotations
 
+import os
 import shutil
 import zipfile
 from dataclasses import dataclass
@@ -64,6 +65,11 @@ def select_files(
 def _api():
     from kaggle.api.kaggle_api_extended import KaggleApi
 
+    # New-style tokens (KGAT_...) work on every endpoint only through KAGGLE_API_TOKEN; the legacy
+    # KAGGLE_USERNAME/KAGGLE_KEY pair is rejected by the competition endpoints.
+    key = os.environ.get("KAGGLE_KEY", "")
+    if key.startswith("KGAT_"):
+        os.environ.setdefault("KAGGLE_API_TOKEN", key)
     api = KaggleApi()
     api.authenticate()
     return api

@@ -109,8 +109,7 @@ Sources: [Banxico/Senate figures via dplnews](https://dplnews.com/?p=326663),
 - Raw data of every dataset stays out of the repo and out of any public demo bundle.
 - AMLworld is CDLA-Sharing-1.0: derived *data* published must carry the same licence. We publish
   only aggregate results and figures, plus the code that builds them.
-- Sparkov is CC0-1.0 (checked on the Kaggle metadata). BAF is CC BY-NC-ND 4.0, so results only. IEEE-CIS terms
-  are not confirmed (the competition rules were never accepted, so it was never downloaded); results only.
+- Sparkov is CC0-1.0 (checked on the Kaggle metadata). BAF is CC BY-NC-ND 4.0, so results only. IEEE-CIS is under the Kaggle competition rules (not redistributable); results only.
 - The synthetic bank is our own work and its sample can be published (it describes no real person).
 - Mexican identifiers (CURP, RFC, CLABE) are generated with the right *format* but random content and a
   deliberately invalid check digit, so none can belong to a real person.

@@ -7,7 +7,7 @@ sobre un **neobanco mexicano simulado** ("Banco Sintético"). Todo está constru
 · Documentación completa en inglés: [README](../README.md).
 
 > Todo es **sintético**. No hay datos de ningún banco, cliente o transacción reales, y ningún resultado describe a una
-> institución real. Los únicos datos reales son los puntos de referencia públicos usados como verificación externa.
+> institución real. Los únicos datos reales son los puntos de referencia públicos usados como verificación externa (IEEE-CIS está cargado pero aún sin resultados de modelo).
 
 ## Por qué un banco simulado
 
