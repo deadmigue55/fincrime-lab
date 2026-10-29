@@ -13,10 +13,12 @@ Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling
 > 180-million-row scaling benchmark is in [docs/benchmark-scaling.md](docs/benchmark-scaling.md).
 >
 > **Live report with interactive explorers: <https://deadmigue55.github.io/fincrime-lab/>**
-> Roadmap and what each step delivered: [docs/plan.md](docs/plan.md).
+> Roadmap and what each step delivered: [docs/plan.md](docs/plan.md). Resumen en español: [docs/resumen-es.md](docs/resumen-es.md).
 >
 > **Everything here runs on synthetic data**, except the public benchmarks used for external checks.
 > No real customer, bank or transaction is involved, and no result describes a real institution.
+
+[![The live report: headline results table](docs/img/report-preview.webp)](https://deadmigue55.github.io/fincrime-lab/)
 
 ## Why this project
 
@@ -313,5 +315,5 @@ be read without rerunning anything.
 
 ## Author
 
-Miguel Vilchis, actuarial scientist. Portfolio: <https://deadmigue.vercel.app/>. Companion to the
+Miguel Vilchis, actuarial scientist. Portfolio: <https://miguevilchis.vercel.app/>. Companion to the
 [Mortality Table Builder](https://github.com/deadmigue55/Mortality-Table-Builder).
