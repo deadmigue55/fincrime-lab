@@ -91,8 +91,8 @@ SPARKOV = Source(
     kind="dataset",
     ref="kartik2112/fraud-detection",
     url="https://www.kaggle.com/datasets/kartik2112/fraud-detection",
-    license="not confirmed: read the Kaggle page",
-    publish_rule="results only until the licence is read",
+    license="CC0-1.0 (Kaggle dataset metadata, checked 2026-10-29)",
+    publish_rule="results only, as for the other benchmarks",
     files=("fraudTrain.csv", "fraudTest.csv"),
     default_files=("fraudTrain.csv", "fraudTest.csv"),
 )

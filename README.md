@@ -3,12 +3,20 @@
 Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling for a
 **simulated Mexican neobank**, built end to end on SQL, Python and statistics.
 
-> Status: **step 11 of 11 done: release 1.0.0**: the synthetic bank, four public benchmarks, the data platform, a
-> point-in-time feature store, the fraud models, the fraud loss model, the experiment lab, the AML module, the governance pack and the public report are built and
-> tested. The 180-million-row scaling benchmark is done ([docs/benchmark-scaling.md](docs/benchmark-scaling.md)).
+[![CI](https://github.com/deadmigue55/fincrime-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/fincrime-lab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
+
+> **Release 1.0.0, all 11 planned steps done.** The synthetic bank, three public benchmarks, the data
+> platform, a point-in-time feature store, the fraud models, the fraud loss model, the experiment lab,
+> the AML module, the governance pack and the public report are built and tested (210 tests). The
+> 180-million-row scaling benchmark is in [docs/benchmark-scaling.md](docs/benchmark-scaling.md).
 >
 > **Live report with interactive explorers: <https://deadmigue55.github.io/fincrime-lab/>**
-> Follow progress in [docs/plan.md](docs/plan.md).
+> Roadmap and what each step delivered: [docs/plan.md](docs/plan.md).
+>
+> **Everything here runs on synthetic data**, except the public benchmarks used for external checks.
+> No real customer, bank or transaction is involved, and no result describes a real institution.
 
 ## Why this project
 
@@ -91,7 +99,7 @@ codes on purpose, so none can belong to a real person or account.
 
 ## Public benchmarks (step 3)
 
-The simulator is checked against four public datasets so no result rests on it alone. Each is
+The simulator is checked against public datasets so no result rests on it alone. Three are loaded (BAF, AMLworld, Sparkov); the fourth (IEEE-CIS) is listed for completeness. Each loaded one is
 downloaded from Kaggle with a checksum manifest, converted to typed Parquet and row-counted
 against what the authors published:
 
@@ -106,8 +114,8 @@ uv run fincrime ingest report          # writes docs/benchmarks.md
 |---|---|---|
 | IBM AMLworld (Small, Medium, and Large for the scale test) | 5M to 180M transactions with labelled laundering and the planted schemes | CDLA-Sharing-1.0 |
 | Bank Account Fraud (NeurIPS 2022) | six 1M-row account-opening datasets, 8 months, built-in bias and drift | CC BY-NC-ND 4.0 |
-| Sparkov | 1.85M synthetic card transactions with merchants and geography | to confirm |
-| IEEE-CIS | 590k real e-commerce transactions | competition rules |
+| Sparkov | 1.85M synthetic card transactions with merchants and geography | CC0-1.0 |
+| IEEE-CIS | 590k real e-commerce transactions. **Not used yet**: Kaggle requires accepting the competition rules by hand, and no result here depends on it | competition rules |
 
 Loading them corrected or sharpened several things recorded in
 [docs/research.md](docs/research.md): BAF has exactly 1,000,000 rows per file and a 1.103% fraud
@@ -269,8 +277,8 @@ such). `uv run fincrime site` rewrites and renders it.
 ## Data
 
 - **Banco Sintético**: described above. Not a real institution.
-- **Public benchmarks** (step 3): IBM AMLworld, Bank Account Fraud (NeurIPS 2022), IEEE-CIS,
-  Sparkov, used as external validation so no result rests on the simulator alone (see above).
+- **Public benchmarks** (step 3): IBM AMLworld, Bank Account Fraud (NeurIPS 2022) and Sparkov, used
+  as external validation so no result rests on the simulator alone (see above). IEEE-CIS is not used.
 
 See [docs/research.md](docs/research.md) for sources and how sure we are of each number, and
 [docs/methodology.md](docs/methodology.md) for the evaluation protocol and what synthetic data can
@@ -278,14 +286,32 @@ and cannot prove.
 
 ## Quick start
 
+Needs [uv](https://docs.astral.sh/uv/) and Python 3.12 or newer. No Kaggle account is needed for this
+part: the synthetic bank and the tests run on their own.
+
 ```powershell
 uv sync
-uv run fincrime doctor
-uv run fincrime bank build --customers 20000
-uv run pytest
+uv run fincrime doctor                       # checks the environment and DuckDB
+uv run fincrime bank build --customers 20000  # a small bank, under half a minute
+uv run pytest                                # 210 tests
 ```
+
+The same commands work in bash. The public benchmarks and the full 200,000-customer pipeline need
+more: copy `.env.example` to `.env` with a Kaggle token for `fincrime ingest`, and about 16 GB of
+RAM and tens of GB of disk for the 180-million-row scaling test (`uv run fincrime --help` lists every
+command). The results the documents quote are committed as JSON under `docs/*-results/`, so they can
+be read without rerunning anything.
+
+## Where to look first
+
+| If you want | Open |
+|---|---|
+| The 5-minute version | the [live report](https://deadmigue55.github.io/fincrime-lab/) |
+| What is assumed and what is not claimed | [docs/methodology.md](docs/methodology.md), [docs/assumptions.md](docs/assumptions.md) |
+| How a model was built and where it is weak | [docs/governance/](docs/governance/README.md) |
+| The code | `src/fincrime/` (`bank`, `lake`, `fraud`, `risk`, `experiments`, `aml`), tests in `tests/` |
 
 ## Author
 
-Miguel Vilchis, actuarial scientist. Companion to the
+Miguel Vilchis, actuarial scientist. Portfolio: <https://deadmigue.vercel.app/>. Companion to the
 [Mortality Table Builder](https://github.com/deadmigue55/Mortality-Table-Builder).

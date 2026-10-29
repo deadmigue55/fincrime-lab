@@ -33,7 +33,7 @@ Licence: CC BY-NC-ND 4.0. Publish rule: non-commercial, no derivatives: never pu
 
 ## Sparkov synthetic card fraud
 
-Licence: not confirmed: read the Kaggle page. Publish rule: results only until the licence is read.
+Licence: CC0-1.0 (Kaggle dataset metadata, checked 2026-10-29). Publish rule: results only, as for the other benchmarks.
 
 | Split | Rows | Fraud rate | Span | Cards |
 |---|---|---|---|---|

@@ -29,8 +29,8 @@ observes, so experiments and selection bias can be tested against the counterfac
 `docs/assumptions.md`; nothing claims to describe a real institution.
 
 **Layer B, public benchmarks**, used as external validation so no result rests on our own simulator
-alone: IBM AMLworld (scale and AML), BAF (fraud, fairness, drift), IEEE-CIS (real card data),
-Sparkov (geography and merchants).
+alone: IBM AMLworld (scale and AML), BAF (fraud, fairness, drift), Sparkov (geography and merchants) and, if
+the Kaggle rules are ever accepted, IEEE-CIS (real card data; never used so far).
 
 ## Modules
 
@@ -42,7 +42,7 @@ Sparkov (geography and merchants).
 | `aml` | Who is laundering, and how many alerts can investigators handle? | Rules vs graph features on AMLworld and the synthetic bank, typology coverage, threshold calibration and lookback, SAR-style case summaries |
 | `risk` | What does fraud cost, and how sure are we? | Chargeback completion factors (IBNR), frequency-severity loss model, capital at 99.5%, model cards and validation report |
 
-A Streamlit dashboard (daily KPIs, alert queue, model health) and a Quarto report sit on top.
+A Quarto report with interactive explorers sits on top (a Streamlit dashboard was planned and replaced by it).
 
 ## Roadmap
 
@@ -53,7 +53,7 @@ Each step is one or more commits, pushed in blocks.
 | 0 | Research, plan, README | docs reviewed |
 | 1 | Package scaffold: uv, config, `doctor`, lint, tests, CI | `uv run fincrime doctor` passes, CI green |
 | 2 | **Done.** Banco Sintético simulator (latent, policy and observed layers) and `assumptions.md` | 18 of 18 acceptance checks pass on a 200,000-customer build, 37 tests, deterministic |
-| 3 | **Mostly done.** Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium loaded and row-counted; AMLworld HI-Large downloading; IEEE-CIS waits for the user to accept the Kaggle rules |
+| 3 | **Done** (IEEE-CIS skipped). Ingest public benchmarks (Kaggle) with manifest and checksums | BAF, Sparkov and AMLworld Small/Medium/HI-Large loaded and row-counted; IEEE-CIS never downloaded (the Kaggle rules were not accepted), and no result depends on it |
 | 4 | **Done.** Data platform: partitions, marts, daily incremental loads, quality contracts, scaling benchmark | platform built and tested (16 tests, 597-drop run); 180M-row scaling benchmark run and published ([benchmark-scaling.md](benchmark-scaling.md)) |
 | 5 | **Done.** Fraud features in SQL (velocity, windows, device sharing; no geo, the simulator has none) | 27.2M-row feature store, point-in-time by event time and knowledge time, oracle + truncation + leak-guard tests ([fraud-features.md](fraud-features.md)) |
 | 6 | **Done.** Fraud models, rules, thresholds, fairness, drift | Protocol fixed first; 4 candidates; recall at fixed budgets with account-level intervals on 9.1M test attempts; BAF check; ablation ([fraud-models.md](fraud-models.md)) |
@@ -61,7 +61,7 @@ Each step is one or more commits, pushed in blocks.
 | 8 | **Done.** Experiment lab | two-bank construction gives the true effect; A/A false-positive rate 4.0% to 5.0%, coverage 94% to 97%, peeking 28% vs 3% to 5% with alpha-spending, late-label bias 36% to 78% removed by weighting; V1 (one cell) and V3 (outcome-dependent loss) fell short and are reported ([experiment-lab.md](experiment-lab.md)) |
 | 9 | **Done.** AML module | four rules find 100% of 219 episodes at 14.8 cases a week; comparison at 20 cases saturated; trees 90% vs rules 66% at 5 cases; graph features unstable on this bank (65%, refits 2% to 89%) but help on fraud-proceeds mules and 3x PR-AUC on AMLworld ([aml.md](aml.md)) |
 | 10 | **Done.** Governance pack | three model cards, validation report with a 32-finding register and a monitoring plan; a test keeps every quoted number equal to its results file ([governance/](governance/README.md)) |
-| 11 | **Done** (except the portfolio card, which waits on your review). Public Quarto report, GitHub Pages, release 1.0.0 | live URL <https://deadmigue55.github.io/fincrime-lab/>, tagged release |
+| 11 | **Done.** Public Quarto report, GitHub Pages, release 1.0.0 | live URL <https://deadmigue55.github.io/fincrime-lab/>, tagged release |
 
 Highest-value cut if time is short: steps 1 to 6, then 8. That already covers data engineering,
 fraud modelling and experimentation. Priority order of modules: `platform`, `fraud`,
@@ -82,6 +82,8 @@ The rules for splits, metrics, uncertainty and what synthetic data can and canno
 
 ## Open questions
 
-- Kaggle API credentials are needed for step 3 (the user creates a token at kaggle.com, Settings, API).
-- Which exact Banxico and CONDUSEF tables to anchor on: to be settled in step 2 against primary sources.
-- Whether to publish the dashboard on Streamlit Community Cloud (as before) or elsewhere.
+Settled during the build: Kaggle credentials come from `.env` (step 3); the anchors are the ones in
+`research.md` (step 2); the public front end is the Quarto report on GitHub Pages (step 11).
+
+Still open: IEEE-CIS (needs the Kaggle rules accepted by hand) and an independent human validation
+of the models, which this repo cannot supply (see `governance/validation-report.md`).
