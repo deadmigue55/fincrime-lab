@@ -9,7 +9,7 @@ Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling
 
 > **Release 1.0.1, all 11 planned steps done.** The synthetic bank, three public benchmarks, the data
 > platform, a point-in-time feature store, the fraud models, the fraud loss model, the experiment lab,
-> the AML module, the governance pack and the public report are built and tested (215 tests). The
+> the AML module, the governance pack and the public report are built and tested (217 tests). The
 > 180-million-row scaling benchmark is in [docs/benchmark-scaling.md](docs/benchmark-scaling.md).
 >
 > **Live report with interactive explorers: <https://deadmigue55.github.io/fincrime-lab/>**
@@ -300,7 +300,7 @@ part: the synthetic bank and the tests run on their own.
 uv sync
 uv run fincrime doctor                       # checks the environment and DuckDB
 uv run fincrime bank build --customers 20000  # a small bank, under half a minute
-uv run pytest                                # 215 tests
+uv run pytest                                # 217 tests
 ```
 
 The same commands work in bash. The public benchmarks and the full 200,000-customer pipeline need
@@ -317,6 +317,7 @@ be read without rerunning anything.
 | What is assumed and what is not claimed | [docs/methodology.md](docs/methodology.md), [docs/assumptions.md](docs/assumptions.md) |
 | How a model was built and where it is weak | [docs/governance/](docs/governance/README.md) |
 | The data in Databricks and three Metabase dashboards | [docs/databricks-metabase.md](docs/databricks-metabase.md) |
+| Thirty worked SQL drills on the bank data, checked on DuckDB and Databricks | [drills/](drills/README.md) |
 | The code | `src/fincrime/` (`bank`, `lake`, `fraud`, `risk`, `experiments`, `aml`, `warehouse`), tests in `tests/` |
 
 ## Author
