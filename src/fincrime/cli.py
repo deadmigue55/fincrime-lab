@@ -507,6 +507,52 @@ def cmd_ingest_convert(args: argparse.Namespace) -> int:
     return 1 if bad else 0
 
 
+def cmd_warehouse_manifest(args: argparse.Namespace) -> int:
+    """Fingerprint every local table (read-only) and save it."""
+    from fincrime.warehouse import local, manifest
+
+    m = local.build_manifest(get_paths(), with_features=not args.no_features)
+    manifest.save(m, Path(args.out))
+    for name, t in m["tables"].items():
+        print(f"{name}: {t['rows']:,} rows")
+    print(f"wrote {args.out}")
+    return 0
+
+
+def cmd_warehouse_export(args: argparse.Namespace) -> int:
+    """Write the copied tables as Parquet files, ready to upload."""
+    from fincrime.warehouse import export
+
+    export.export(get_paths(), with_features=not args.no_features)
+    return 0
+
+
+def cmd_warehouse_load(args: argparse.Namespace) -> int:
+    """Upload the staged files, create the tables and rebuild the marts in Databricks."""
+    from fincrime.warehouse import databricks as dbx
+
+    w = dbx.client()
+    with dbx.session(w) as run:
+        dbx.setup(run)
+    dbx.upload(get_paths(), w)
+    with dbx.session(w) as run:
+        dbx.load(run)
+        dbx.rebuild_marts(run)
+    return 0
+
+
+def cmd_warehouse_reconcile(args: argparse.Namespace) -> int:
+    """Compare every table in Databricks with the local manifest."""
+    from fincrime.warehouse import databricks as dbx
+    from fincrime.warehouse import manifest
+
+    with dbx.session() as run:
+        problems = dbx.reconcile(run, manifest.load(Path(args.manifest)))
+    for name, diffs in problems.items():
+        print(name, *diffs, sep="\n  ")
+    return 1 if problems else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(prog="fincrime", description=__doc__)
@@ -677,6 +723,22 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--kinds", nargs="*", help="AMLworld kinds: HI LI")
         sp.add_argument("--force", action="store_true")
         sp.set_defaults(func=fn)
+    wh = sub.add_parser("warehouse", help="copy the data to Databricks and prove nothing was lost")
+    wh_sub = wh.add_subparsers(dest="action", required=True)
+    wm = wh_sub.add_parser("manifest", help="fingerprint every local table")
+    wm.add_argument("--out", default="docs/warehouse/manifest.json")
+    wm.add_argument("--no-features", action="store_true")
+    wm.set_defaults(func=cmd_warehouse_manifest)
+    we = wh_sub.add_parser("export", help="write Parquet files to upload")
+    we.add_argument("--no-features", action="store_true")
+    we.set_defaults(func=cmd_warehouse_export)
+    wh_sub.add_parser("load", help="upload, create tables, rebuild marts").set_defaults(
+        func=cmd_warehouse_load
+    )
+    wr = wh_sub.add_parser("reconcile", help="compare Databricks with the manifest")
+    wr.add_argument("--manifest", default="docs/warehouse/manifest.json")
+    wr.set_defaults(func=cmd_warehouse_reconcile)
+
     return parser
 
 

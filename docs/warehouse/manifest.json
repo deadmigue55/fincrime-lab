@@ -1,0 +1,1111 @@
+{
+ "created": "2026-11-04T03:02:10+00:00",
+ "tables": {
+  "lake.attempts": {
+   "rows": 34739680,
+   "columns": {
+    "event_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2917836516691898201599,
+     "min": 1048576,
+     "max": 72092778410018966,
+     "distinct": 34739680
+    },
+    "ts": {
+     "category": "ts",
+     "nulls": 0,
+     "min": "2024-01-01 03:53:10",
+     "max": "2025-06-30 23:59:59"
+    },
+    "account_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2193560047140,
+     "min": 1,
+     "max": 200390,
+     "distinct": 199331
+    },
+    "event_type": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 9,
+     "length": 274495792
+    },
+    "channel": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 7,
+     "length": 212381373
+    },
+    "direction": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 2,
+     "length": 96654381
+    },
+    "amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 59976299836.73027,
+     "min": 10.0,
+     "max": 5982177.12
+    },
+    "counterparty_kind": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 7,
+     "length": 247469345
+    },
+    "counterparty_account": {
+     "category": "int",
+     "nulls": 31894692,
+     "sum": 179966895999,
+     "min": 1,
+     "max": 200390,
+     "distinct": 190700
+    },
+    "counterparty_bank": {
+     "category": "text",
+     "nulls": 25467238,
+     "distinct": 20,
+     "length": 27817326
+    },
+    "mcc_group": {
+     "category": "text",
+     "nulls": 16957227,
+     "distinct": 14,
+     "length": 151535526
+    },
+    "device_id": {
+     "category": "int",
+     "nulls": 22068901,
+     "sum": 86562621601028,
+     "min": 11,
+     "max": 8000001286,
+     "distinct": 229062
+    },
+    "decision": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 3,
+     "length": 243177760
+    },
+    "rule": {
+     "category": "text",
+     "nulls": 34574920,
+     "distinct": 5,
+     "length": 2106165
+    },
+    "status": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 3,
+     "length": 277945875
+    },
+    "event_day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": [
+    "filename"
+   ]
+  },
+  "lake.truth": {
+   "rows": 34739680,
+   "columns": {
+    "event_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2917836516691898201599,
+     "min": 1048576,
+     "max": 72092778410018966,
+     "distinct": 34739680
+    },
+    "is_fraud": {
+     "category": "bool",
+     "nulls": 0,
+     "true": 8884
+    },
+    "fraud_type": {
+     "category": "text",
+     "nulls": 34721406,
+     "distinct": 6,
+     "length": 202715
+    },
+    "episode_id": {
+     "category": "int",
+     "nulls": 34723605,
+     "sum": 16951402,
+     "min": 1,
+     "max": 1505,
+     "distinct": 1505
+    },
+    "crime_class": {
+     "category": "text",
+     "nulls": 34721406,
+     "distinct": 2,
+     "length": 138320
+    },
+    "ring_id": {
+     "category": "int",
+     "nulls": 34729144,
+     "sum": 274565,
+     "min": 1,
+     "max": 50,
+     "distinct": 50
+    },
+    "event_day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": [
+    "filename"
+   ]
+  },
+  "lake.reports": {
+   "rows": 4122,
+   "columns": {
+    "event_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 297021402638770814251,
+     "min": 72057594037932032,
+     "max": 72057594043195397,
+     "distinct": 4122
+    },
+    "episode_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 3523401,
+     "min": 1,
+     "max": 1286,
+     "distinct": 893
+    },
+    "fraud_type": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 2,
+     "length": 46764
+    },
+    "reported_ts": {
+     "category": "ts",
+     "nulls": 0,
+     "min": "2024-02-17 17:24:44.533263",
+     "max": "2026-02-12 07:05:37.777696"
+    },
+    "arrival": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-02-17",
+     "max": "2026-02-12"
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": [
+    "filename"
+   ]
+  },
+  "dim.accounts": {
+   "rows": 200390,
+   "columns": {
+    "account_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 20078176245,
+     "min": 1,
+     "max": 200390,
+     "distinct": 200390
+    },
+    "customer_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 20078176245,
+     "min": 1,
+     "max": 200390,
+     "distinct": 200390
+    },
+    "clabe": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 200390,
+     "length": 3607020
+    },
+    "opened_on": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "state": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 32,
+     "length": 400780
+    },
+    "sex": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 2,
+     "length": 200390
+    },
+    "birth_date": {
+     "category": "date",
+     "nulls": 0,
+     "min": "1953-02-04",
+     "max": "2007-06-24"
+    },
+    "income_band": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 5,
+     "length": 1124673
+    },
+    "n_devices": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 240515,
+     "min": 1,
+     "max": 2,
+     "distinct": 2
+    },
+    "curp": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 200390,
+     "length": 3607020
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": []
+  },
+  "eval.accounts": {
+   "rows": 200390,
+   "columns": {
+    "account_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 20078176245,
+     "min": 1,
+     "max": 200390,
+     "distinct": 200390
+    },
+    "fraud_role": {
+     "category": "text",
+     "nulls": 200000,
+     "distinct": 1,
+     "length": 1560
+    },
+    "ring_id": {
+     "category": "int",
+     "nulls": 200000,
+     "sum": 9754,
+     "min": 1,
+     "max": 50,
+     "distinct": 50
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": []
+  },
+  "eval.daily_fraud": {
+   "rows": 547,
+   "columns": {
+    "day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "fraud_attempts": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 8552,
+     "min": 0,
+     "max": 91,
+     "distinct": 62
+    },
+    "fraud_approved": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 5314,
+     "min": 0,
+     "max": 57,
+     "distinct": 48
+    },
+    "fraud_blocked": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 3238,
+     "min": 0,
+     "max": 35,
+     "distinct": 30
+    },
+    "fraud_lost_amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 4845793.419999999,
+     "min": 0.0,
+     "max": 159489.33000000002
+    },
+    "fraud_blocked_amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 10529509.580000002,
+     "min": 0.0,
+     "max": 224424.69999999998
+    },
+    "laundering_events": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 9390,
+     "min": 0,
+     "max": 66,
+     "distinct": 55
+    },
+    "genuine_blocked": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 4894,
+     "min": 0,
+     "max": 36,
+     "distinct": 30
+    }
+   },
+   "copy": false,
+   "rebuild": true,
+   "excluded": []
+  },
+  "mart.daily_kpis": {
+   "rows": 547,
+   "columns": {
+    "day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "attempts": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 34739680,
+     "min": 229,
+     "max": 298493,
+     "distinct": 547
+    },
+    "approved": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 34731488,
+     "min": 229,
+     "max": 298460,
+     "distinct": 547
+    },
+    "declined": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2505,
+     "min": 0,
+     "max": 30,
+     "distinct": 26
+    },
+    "stepup_failed": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 5687,
+     "min": 0,
+     "max": 37,
+     "distinct": 34
+    },
+    "approved_amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 59830397836.99014,
+     "min": 263262.3599999998,
+     "max": 1721949514.010005
+    },
+    "outgoing_amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 25984304519.76001,
+     "min": 174672.47999999986,
+     "max": 155318874.80999988
+    },
+    "active_accounts": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 21025130,
+     "min": 136,
+     "max": 150335,
+     "distinct": 546
+    }
+   },
+   "copy": false,
+   "rebuild": true,
+   "excluded": []
+  },
+  "mart.account_day": {
+   "rows": 21025130,
+   "columns": {
+    "day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "account_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 1327805017713,
+     "min": 1,
+     "max": 200390,
+     "distinct": 199331
+    },
+    "n_attempts": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 34739680,
+     "min": 1,
+     "max": 27,
+     "distinct": 21
+    },
+    "n_approved": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 34731488,
+     "min": 0,
+     "max": 23,
+     "distinct": 22
+    },
+    "n_out": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 27166829,
+     "min": 0,
+     "max": 20,
+     "distinct": 19
+    },
+    "n_in": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 7564659,
+     "min": 0,
+     "max": 7,
+     "distinct": 8
+    },
+    "amount_out": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 25984304519.760014,
+     "min": 0.0,
+     "max": 5982177.12
+    },
+    "amount_in": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 33846093317.22985,
+     "min": 0.0,
+     "max": 5982177.12
+    },
+    "max_amount_out": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 22522541676.03986,
+     "min": 0.0,
+     "max": 5982177.12
+    },
+    "n_night": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2281531,
+     "min": 0,
+     "max": 11,
+     "distinct": 12
+    },
+    "n_devices": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 10228764,
+     "min": 0,
+     "max": 3,
+     "distinct": 4
+    },
+    "n_counterparties": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 11936783,
+     "min": 0,
+     "max": 11,
+     "distinct": 11
+    },
+    "n_blocked": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 8192,
+     "min": 0,
+     "max": 6,
+     "distinct": 7
+    }
+   },
+   "copy": false,
+   "rebuild": true,
+   "excluded": []
+  },
+  "mart.device_account_day": {
+   "rows": 10228764,
+   "columns": {
+    "day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "device_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 26259927880536,
+     "min": 11,
+     "max": 8000001286,
+     "distinct": 229062
+    },
+    "account_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 645376051459,
+     "min": 1,
+     "max": 200390,
+     "distinct": 194770
+    },
+    "n_events": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 12670779,
+     "min": 1,
+     "max": 14,
+     "distinct": 14
+    }
+   },
+   "copy": false,
+   "rebuild": true,
+   "excluded": []
+  },
+  "mart.transfer_edge_day": {
+   "rows": 1421429,
+   "columns": {
+    "day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "src_account": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 89904638451,
+     "min": 2,
+     "max": 200390,
+     "distinct": 162606
+    },
+    "dst_account": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 89839548648,
+     "min": 1,
+     "max": 200390,
+     "distinct": 184032
+    },
+    "n_transfers": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 1421431,
+     "min": 1,
+     "max": 2,
+     "distinct": 2
+    },
+    "amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 4100590714.7300053,
+     "min": 10.0,
+     "max": 5982177.12
+    }
+   },
+   "copy": false,
+   "rebuild": true,
+   "excluded": []
+  },
+  "ops.load_ledger": {
+   "rows": 597,
+   "columns": {
+    "drop_id": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 597,
+     "length": 5970
+    },
+    "status": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 1,
+     "length": 3582
+    },
+    "source_rows": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 34740191,
+     "min": 1,
+     "max": 293570,
+     "distinct": 561
+    },
+    "source_sha256": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 597,
+     "length": 38208
+    },
+    "event_days": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 551,
+     "length": 23518
+    },
+    "message": {
+     "category": "text",
+     "nulls": 597,
+     "distinct": 0,
+     "length": null
+    },
+    "started_at": {
+     "category": "ts",
+     "nulls": 0,
+     "min": "2026-10-23 12:36:15.48485",
+     "max": "2026-10-23 12:51:34.040233"
+    },
+    "finished_at": {
+     "category": "ts",
+     "nulls": 0,
+     "min": "2026-10-23 12:36:15.593493",
+     "max": "2026-10-23 12:51:34.377243"
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": []
+  },
+  "ops.dq_results": {
+   "rows": 7403,
+   "columns": {
+    "drop_id": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 597,
+     "length": 74030
+    },
+    "contract": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 14,
+     "length": 147284
+    },
+    "severity": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 2,
+     "length": 35517
+    },
+    "violations": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 12881,
+     "min": 0,
+     "max": 5911,
+     "distinct": 5
+    },
+    "passed": {
+     "category": "bool",
+     "nulls": 0,
+     "true": 7395
+    },
+    "run_at": {
+     "category": "ts",
+     "nulls": 0,
+     "min": "2026-10-23 12:36:15.504992",
+     "max": "2026-10-23 12:51:34.061429"
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": []
+  },
+  "ops.event_registry": {
+   "rows": 34739680,
+   "columns": {
+    "event_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2917836516691898201599,
+     "min": 1048576,
+     "max": 72092778410018966,
+     "distinct": 34739680
+    },
+    "event_day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "drop_id": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 550,
+     "length": 347396800
+    }
+   },
+   "copy": false,
+   "rebuild": false,
+   "excluded": []
+  },
+  "features.fraud_events": {
+   "rows": 27175021,
+   "columns": {
+    "event_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 901656823892575092877,
+     "min": 1048576,
+     "max": 72092778410018966,
+     "distinct": 27175021
+    },
+    "ts": {
+     "category": "ts",
+     "nulls": 0,
+     "min": "2024-01-01 03:53:10",
+     "max": "2025-06-30 23:59:59"
+    },
+    "event_day": {
+     "category": "date",
+     "nulls": 0,
+     "min": "2024-01-01",
+     "max": "2025-06-30"
+    },
+    "account_id": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 1714382302066,
+     "min": 1,
+     "max": 200390,
+     "distinct": 197819
+    },
+    "amount": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 26130206519.499584,
+     "min": 10.0,
+     "max": 5982177.12
+    },
+    "hour": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 404957853,
+     "min": 0,
+     "max": 23,
+     "distinct": 24
+    },
+    "dow": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 113758899,
+     "min": 1,
+     "max": 7,
+     "distinct": 7
+    },
+    "dom": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 436035278,
+     "min": 1,
+     "max": 31,
+     "distinct": 31
+    },
+    "is_night": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 713272,
+     "min": 0,
+     "max": 1,
+     "distinct": 2
+    },
+    "event_type": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 6,
+     "length": 221543179
+    },
+    "channel": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 5,
+     "length": 185960274
+    },
+    "mcc_group": {
+     "category": "text",
+     "nulls": 9392568,
+     "distinct": 14,
+     "length": 151535526
+    },
+    "counterparty_kind": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 5,
+     "length": 197483305
+    },
+    "has_device": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 12670779,
+     "min": 0,
+     "max": 1,
+     "distinct": 2
+    },
+    "account_age_days": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 4640779723,
+     "min": 0,
+     "max": 546,
+     "distinct": 547
+    },
+    "n_att_10m": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 371490.0,
+     "min": 0.0,
+     "max": 9.0
+    },
+    "n_att_1h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 2082384.0,
+     "min": 0.0,
+     "max": 14.0
+    },
+    "n_att_24h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 34806433.0,
+     "min": 0.0,
+     "max": 27.0
+    },
+    "n_att_7d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 236215665.0,
+     "min": 0.0,
+     "max": 78.0
+    },
+    "n_att_30d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 972764880.0,
+     "min": 0.0,
+     "max": 256.0
+    },
+    "n_fail_1h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 5294.0,
+     "min": 0.0,
+     "max": 6.0
+    },
+    "n_fail_24h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 11731.0,
+     "min": 0.0,
+     "max": 6.0
+    },
+    "n_out_30d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 791569951.0,
+     "min": 0.0,
+     "max": 216.0
+    },
+    "out_amt_1h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 1593387341.8500044,
+     "min": 0.0,
+     "max": 981861.06
+    },
+    "out_amt_24h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 26679269844.7798,
+     "min": -2.2737367544323206e-13,
+     "max": 2137241.46
+    },
+    "out_amt_7d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 182050980475.61215,
+     "min": -9.094947017729282e-13,
+     "max": 6035221.459999998
+    },
+    "out_amt_30d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 750485689134.0469,
+     "min": 0.0,
+     "max": 6108784.140000001
+    },
+    "out_sq_30d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 1.4397295638331448e+16,
+     "min": 0.0,
+     "max": 35787174309245.03
+    },
+    "in_amt_24h": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 27102951067.890015,
+     "min": 0.0,
+     "max": 5982177.12
+    },
+    "in_amt_7d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 166183674143.57196,
+     "min": -2.2737367544323206e-13,
+     "max": 5983448.66
+    },
+    "n_night_30d": {
+     "category": "float",
+     "nulls": 0,
+     "sum": 47844433.0,
+     "min": 0.0,
+     "max": 17.0
+    },
+    "n_prior": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 5922582054,
+     "min": 0,
+     "max": 2874,
+     "distinct": 2870
+    },
+    "n_prior_dev": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 2957617258,
+     "min": 0,
+     "max": 1739,
+     "distinct": 1735
+    },
+    "n_prior_cpty": {
+     "category": "int",
+     "nulls": 0,
+     "sum": 3202923805,
+     "min": 0,
+     "max": 2028,
+     "distinct": 2026
+    },
+    "mean_out_30d": {
+     "category": "float",
+     "nulls": 281080,
+     "sum": 25608942042.446823,
+     "min": 9.999999999999998,
+     "max": 855103.85
+    },
+    "amount_vs_mean_30d": {
+     "category": "float",
+     "nulls": 281080,
+     "sum": 36132251.41096786,
+     "min": 0.00027006148609183344,
+     "max": 3542.7059999999997
+    },
+    "amount_z_30d": {
+     "category": "float",
+     "nulls": 634892,
+     "sum": 350833957719.2323,
+     "min": -87397178.08433272,
+     "max": 14828018073.599998
+    },
+    "is_new_device": {
+     "category": "int",
+     "nulls": 14504242,
+     "sum": 232586,
+     "min": 0,
+     "max": 1,
+     "distinct": 2
+    },
+    "is_new_cpty": {
+     "category": "int",
+     "nulls": 21482446,
+     "sum": 2416832,
+     "min": 0,
+     "max": 1,
+     "distinct": 2
+    },
+    "n_other_accts_device": {
+     "category": "int",
+     "nulls": 14504242,
+     "sum": 14841,
+     "min": 0,
+     "max": 19,
+     "distinct": 20
+    },
+    "night_share_30d": {
+     "category": "float",
+     "nulls": 158560,
+     "sum": 1639760.7502867228,
+     "min": 0.0,
+     "max": 1.0
+    },
+    "grp_state": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 32,
+     "length": 54350042
+    },
+    "grp_income_band": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 5,
+     "length": 152909689
+    },
+    "grp_age_band": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 4,
+     "length": 123228031
+    },
+    "grp_sex": {
+     "category": "text",
+     "nulls": 0,
+     "distinct": 2,
+     "length": 27175021
+    }
+   },
+   "copy": true,
+   "rebuild": false,
+   "excluded": [
+    "month"
+   ]
+  }
+ }
+}
