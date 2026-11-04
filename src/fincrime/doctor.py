@@ -84,7 +84,7 @@ def check_disk(paths: Paths, min_free_gb: float = MIN_FREE_GB) -> Check:
 def check_kaggle() -> Check:
     """Kaggle credentials are only needed for the public benchmarks, so this never blocks."""
     ok = kaggle_configured()
-    detail = "configured" if ok else "not set (optional, for the benchmarks: see .env.example)"
+    detail = "configured" if ok else "not set (optional, only the public benchmarks need it)"
     return Check("kaggle login", ok, detail, required=False)
 
 

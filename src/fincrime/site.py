@@ -287,7 +287,7 @@ uv run fincrime fraud evaluate && uv run fincrime risk report && uv run fincrime
 uv run fincrime site            # rewrites and renders this page
 ```
 
-*Built by Miguel Abarca.* The code and every protocol are in the
+*Built by Miguel Vilchis.* The code and every protocol are in the
 [repository]({github}).
 """
 

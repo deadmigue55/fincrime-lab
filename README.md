@@ -304,7 +304,7 @@ uv run pytest                                # 215 tests
 ```
 
 The same commands work in bash. The public benchmarks and the full 200,000-customer pipeline need
-more: copy `.env.example` to `.env` with a Kaggle token for `fincrime ingest`, and about 16 GB of
+more: put a Kaggle login (`KAGGLE_USERNAME` and `KAGGLE_KEY`) in a local `.env` file for `fincrime ingest`, and about 16 GB of
 RAM and tens of GB of disk for the 180-million-row scaling test (`uv run fincrime --help` lists every
 command). The results the documents quote are committed as JSON under `docs/*-results/`, so they can
 be read without rerunning anything.

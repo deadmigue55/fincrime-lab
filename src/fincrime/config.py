@@ -3,7 +3,7 @@
 Everything that touches the filesystem or secrets goes through here, so the rest of the
 code never hard-codes a path. Set ``FCL_DATA_DIR`` to keep the data somewhere else
 (e.g. a bigger drive: the largest public benchmark is tens of GB). Secrets are read from
-environment variables, which can be put in a local ``.env`` file (see ``.env.example``).
+environment variables, which can be put in a local ``.env`` file.
 """
 
 from __future__ import annotations
