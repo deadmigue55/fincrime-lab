@@ -51,7 +51,9 @@ the full one. On Free Edition's single 2X-Small serverless warehouse the three l
 
 ## The dashboards
 
-Each chart is a saved SQL question in [`dashboards/`](../dashboards), one file per chart.
+Each chart is a saved SQL question in [`dashboards/`](../dashboards), one file per chart. The Fraud operations dashboard
+has two filters, a date range and a fraud type, built as Metabase field filters: a `[[where {{day}}]]` line in the SQL
+that a dashboard control fills in, so someone who does not write SQL can ask for one quarter or one fraud type.
 
 **Fraud operations** ([queries](../dashboards/fraud-operations))
 
@@ -88,7 +90,8 @@ reported a median of 29 days after the event and account takeover after 2, which
    `uv run fincrime warehouse load` (create the catalog `fincrime`, upload, load, rebuild the
    marts), then `uv run fincrime warehouse reconcile`.
 3. Start Metabase, add a Databricks database with the workspace host, the SQL warehouse HTTP path
-   and the token, set the catalog to `fincrime`, and paste the queries from `dashboards/`.
+   and the token, set the catalog to `fincrime`, and paste the queries from `dashboards/` (in the Fraud operations queries, the `[[...]]` lines are Metabase
+   filters: keep them in Metabase, delete them to run the query in the Databricks SQL editor).
 
 ## Limits
 
