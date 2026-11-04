@@ -59,7 +59,7 @@ Each chart is a saved SQL question in [`dashboards/`](../dashboards), one file p
 
 Declines and failed step-ups are rare and settle quickly. The first weeks are high on friction
 because at launch every device and beneficiary is new, so the `new_device_amount` and
-`young_beneficiary` rules fire on genuine customers; later the share of fraud stopped holds around
+`young_beneficiary` rules fire on genuine customers; later the share of fraud attempts blocked holds around
 35% to 40% at about 1 to 2 genuine blocks per 10,000 attempts.
 
 **Network and AML** ([queries](../dashboards/network-and-aml))
