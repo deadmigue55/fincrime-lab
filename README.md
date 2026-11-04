@@ -9,7 +9,7 @@ Fraud detection, anti-money-laundering, experimentation and fraud-loss modelling
 
 > **Release 1.0.1, all 11 planned steps done.** The synthetic bank, three public benchmarks, the data
 > platform, a point-in-time feature store, the fraud models, the fraud loss model, the experiment lab,
-> the AML module, the governance pack and the public report are built and tested (210 tests). The
+> the AML module, the governance pack and the public report are built and tested (215 tests). The
 > 180-million-row scaling benchmark is in [docs/benchmark-scaling.md](docs/benchmark-scaling.md).
 >
 > **Live report with interactive explorers: <https://deadmigue55.github.io/fincrime-lab/>**
@@ -142,6 +142,11 @@ registry) and a cascade in which a few fraud reports that arrived before their t
 185 drops to be rejected (fixed by treating out-of-order reports as a monitored warning). After
 the fixes every drop loads and every report finds its event. The write-up keeps the bad run in it
 on purpose.
+
+The same tables also exist in Databricks (Free Edition): the marts are rebuilt there in Databricks
+SQL, every table is reconciled against a committed manifest, and three Metabase dashboards read from
+it. This is an addition for exploration, not a replacement of the DuckDB pipeline; see
+[docs/databricks-metabase.md](docs/databricks-metabase.md).
 
 ```mermaid
 flowchart LR
@@ -295,7 +300,7 @@ part: the synthetic bank and the tests run on their own.
 uv sync
 uv run fincrime doctor                       # checks the environment and DuckDB
 uv run fincrime bank build --customers 20000  # a small bank, under half a minute
-uv run pytest                                # 210 tests
+uv run pytest                                # 215 tests
 ```
 
 The same commands work in bash. The public benchmarks and the full 200,000-customer pipeline need
@@ -311,7 +316,8 @@ be read without rerunning anything.
 | The 5-minute version | the [live report](https://deadmigue55.github.io/fincrime-lab/) |
 | What is assumed and what is not claimed | [docs/methodology.md](docs/methodology.md), [docs/assumptions.md](docs/assumptions.md) |
 | How a model was built and where it is weak | [docs/governance/](docs/governance/README.md) |
-| The code | `src/fincrime/` (`bank`, `lake`, `fraud`, `risk`, `experiments`, `aml`), tests in `tests/` |
+| The data in Databricks and three Metabase dashboards | [docs/databricks-metabase.md](docs/databricks-metabase.md) |
+| The code | `src/fincrime/` (`bank`, `lake`, `fraud`, `risk`, `experiments`, `aml`, `warehouse`), tests in `tests/` |
 
 ## Author
 

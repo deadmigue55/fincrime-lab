@@ -62,6 +62,7 @@ Each step is one or more commits, pushed in blocks.
 | 9 | **Done.** AML module | four rules find 100% of 219 episodes at 14.8 cases a week; comparison at 20 cases saturated; trees 90% vs rules 66% at 5 cases; graph features unstable on this bank (65%, refits 2% to 89%) but help on fraud-proceeds mules and 3x PR-AUC on AMLworld ([aml.md](aml.md)) |
 | 10 | **Done.** Governance pack | three model cards, validation report with a 32-finding register and a monitoring plan; a test keeps every quoted number equal to its results file ([governance/](governance/README.md)) |
 | 11 | **Done.** Public Quarto report, GitHub Pages, release 1.0.0 | live URL <https://deadmigue55.github.io/fincrime-lab/>, tagged release |
+| 12 | **Done.** Copy of the data in Databricks (Free Edition), marts rebuilt in Databricks SQL, three Metabase dashboards | 13 tables reconcile as identical against a committed manifest ([databricks-metabase.md](databricks-metabase.md)) |
 
 Highest-value cut if time is short: steps 1 to 6, then 8. That already covers data engineering,
 fraud modelling and experimentation. Priority order of modules: `platform`, `fraud`,
