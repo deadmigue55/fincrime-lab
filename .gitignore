@@ -33,3 +33,6 @@ htmlcov/
 Thumbs.db
 .vscode/
 .idea/
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/

@@ -1,0 +1,46 @@
+version: 2
+
+# Tables the Python pipeline lands: in Databricks they are the uploaded Delta tables, in the CI
+# database they are copies of the DuckDB lake. dbt only reads them; it never writes here.
+sources:
+  - name: lake
+    tables:
+      - name: attempts
+        description: One row per payment or card attempt the bank saw, approved or not.
+        columns:
+          - name: event_id
+            data_tests: [unique, not_null]
+          - name: account_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments: {to: "source('dim', 'accounts')", field: account_id}
+          - name: status
+            data_tests:
+              - accepted_values:
+                  arguments: {values: [approved, declined, stepup_failed]}
+          - name: direction
+            data_tests:
+              - accepted_values:
+                  arguments: {values: ["in", "out"]}
+      - name: truth
+        description: Ground truth for each event. Used only by the eval models.
+        columns:
+          - name: event_id
+            data_tests:
+              - unique
+              - relationships:
+                  arguments: {to: "source('lake', 'attempts')", field: event_id}
+  - name: dim
+    tables:
+      - name: accounts
+        columns:
+          - name: account_id
+            data_tests: [unique, not_null]
+  - name: ops
+    tables:
+      - name: load_ledger
+        description: One row per arrival drop; status tells whether it loaded.
+        columns:
+          - name: drop_id
+            data_tests: [unique, not_null]

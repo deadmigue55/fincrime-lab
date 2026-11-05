@@ -1,0 +1,19 @@
+name: fincrime
+version: "1.0.0"
+config-version: 2
+profile: fincrime
+
+model-paths: [models]
+test-paths: [tests]
+macro-paths: [macros]
+target-path: target
+clean-targets: [target, dbt_packages]
+
+models:
+  fincrime:
+    +materialized: table
+    mart:
+      +schema: mart
+    eval:
+      +schema: eval
+      +tags: [eval] # ground truth: evaluation code only, never a model input

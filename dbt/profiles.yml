@@ -1,0 +1,17 @@
+# Two targets over the same models. `duckdb` is the default and needs no secrets (it is what CI runs);
+# `databricks` reads the connection from environment variables and is run by hand.
+fincrime:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('FINCRIME_DBT_DB', 'target/fincrime.duckdb') }}"
+      threads: 4
+    databricks:
+      type: databricks
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      catalog: "{{ env_var('DATABRICKS_CATALOG', 'fincrime') }}"
+      schema: default
+      threads: 1 # Free Edition has one 2X-Small warehouse

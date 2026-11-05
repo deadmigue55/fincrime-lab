@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: daily_kpis
+    description: Attempts, approvals and active accounts per day. One row per day.
+    columns:
+      - name: day
+        data_tests: [unique, not_null]
+      - name: attempts
+        data_tests: [not_null]
+
+  - name: account_day
+    description: One row per account and day; the building block of behavioural features.
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [day, account_id]}
+    columns:
+      - name: day
+        data_tests: [not_null]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: "source('dim', 'accounts')", field: account_id}
+
+  - name: device_account_day
+    description: Which devices were used on which accounts, per day.
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [day, device_id, account_id]}
+    columns:
+      - name: account_id
+        data_tests:
+          - relationships:
+              arguments: {to: "source('dim', 'accounts')", field: account_id}
+
+  - name: transfer_edge_day
+    description: Money moving between two accounts of the bank, per day.
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [day, src_account, dst_account]}
+    columns:
+      - name: src_account
+        data_tests:
+          - relationships:
+              arguments: {to: "source('dim', 'accounts')", field: account_id}
+      - name: dst_account
+        data_tests:
+          - relationships:
+              arguments: {to: "source('dim', 'accounts')", field: account_id}

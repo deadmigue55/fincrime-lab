@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: daily_fraud
+    description: Fraud counts and amounts per day from the ground truth. Evaluation code only.
+    columns:
+      - name: day
+        data_tests: [unique, not_null]
+      - name: fraud_attempts
+        data_tests: [not_null]

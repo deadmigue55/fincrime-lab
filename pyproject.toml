@@ -27,6 +27,11 @@ databricks = [
     "databricks-sdk>=0.160.0",
     "databricks-sql-connector>=4.8.0",
 ]
+dbt = [
+    "dbt-core>=1.12.6",
+    "dbt-databricks>=1.5.1",
+    "dbt-duckdb>=1.11.1",
+]
 
 [build-system]
 requires = ["hatchling"]
