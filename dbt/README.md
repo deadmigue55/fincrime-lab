@@ -56,3 +56,8 @@ uv run dbt docs serve --project-dir dbt --profiles-dir dbt
   incremental refresh is not modelled as an `incremental` dbt model.
 - `eval.daily_fraud` reads ground truth and is tagged `eval`; keep it out of anything a model trains on.
 - CI runs only the DuckDB target on a small bank; no Databricks secret is stored in GitHub.
+
+## Checked on Databricks
+
+A run against the Free Edition SQL warehouse on 2026-11-05 finished with
+`PASS=34 WARN=0 ERROR=0` (5 models and 29 tests, on the full 34.7-million-row bank).
