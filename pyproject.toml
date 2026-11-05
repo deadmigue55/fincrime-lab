@@ -24,12 +24,12 @@ fincrime = "fincrime.cli:main"
 
 [project.optional-dependencies]
 databricks = [
-    "databricks-sdk>=0.160.0",
-    "databricks-sql-connector>=4.8.0",
+    "databricks-sdk>=0.68.0,<0.118.0",
+    "databricks-sql-connector>=4.2.2,<4.4.1",
 ]
 dbt = [
     "dbt-core>=1.12.6",
-    "dbt-databricks>=1.5.1",
+    "dbt-databricks>=1.13.0",
     "dbt-duckdb>=1.11.1",
 ]
 
